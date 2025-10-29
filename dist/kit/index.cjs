@@ -187,6 +187,7 @@ function updateColumns(node, colgroup, table, cellMinWidth, overrideCol, overrid
 }
 var TableView = class {
   constructor(node, cellMinWidth, view, getPos) {
+    console.log("[ERWAN] TableView", node);
     this.node = node;
     this.cellMinWidth = cellMinWidth;
     this.view = view;

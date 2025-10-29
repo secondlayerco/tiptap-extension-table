@@ -85,6 +85,7 @@ export class TableView implements NodeView {
   getPos?: () => number | undefined
 
   constructor(node: ProseMirrorNode, cellMinWidth: number, view?: EditorView, getPos?: () => number | undefined) {
+    console.log('[ERWAN] TableView', node)
     this.node = node
     this.cellMinWidth = cellMinWidth
     this.view = view
