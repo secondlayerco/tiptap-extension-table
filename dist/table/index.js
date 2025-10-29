@@ -785,34 +785,15 @@ var Table = Node.create({
   },
   addProseMirrorPlugins() {
     const isResizable = this.options.resizable && this.editor.isEditable;
-    const customScrollbar = this.options.customScrollbar;
-    console.log("[Table] addProseMirrorPlugins called, isResizable:", isResizable, "customScrollbar:", customScrollbar);
-    const CustomView = this.options.View && customScrollbar ? class CustomTableView {
-      constructor(node, cellMinWidth, view, getPos) {
-        console.log("[CustomTableView] Constructor called with customScrollbar:", customScrollbar);
-        this.tableView = new TableView(node, cellMinWidth, view, getPos, customScrollbar);
-        this.node = this.tableView.node;
-        this.dom = this.tableView.dom;
-        this.contentDOM = this.tableView.contentDOM;
-      }
-      update(node) {
-        return this.tableView.update(node);
-      }
-      ignoreMutation(mutation) {
-        return this.tableView.ignoreMutation(mutation);
-      }
-      destroy() {
-        this.tableView.destroy();
-      }
-    } : this.options.View;
-    console.log("[Table] CustomView created:", !!CustomView, "Will use columnResizing:", isResizable);
+    console.log("[Table] addProseMirrorPlugins called, isResizable:", isResizable);
     const plugins = [
       ...isResizable ? [
         columnResizing({
           handleWidth: this.options.handleWidth,
           cellMinWidth: this.options.cellMinWidth,
           defaultCellMinWidth: this.options.cellMinWidth,
-          View: CustomView,
+          // Don't pass a custom View to columnResizing - let addNodeView handle it
+          View: TableView,
           lastColumnResizable: this.options.lastColumnResizable
         })
       ] : [],
@@ -822,38 +803,6 @@ var Table = Node.create({
     ];
     console.log("[Table] Returning plugins:", plugins.length, "plugins");
     return plugins;
-  },
-  onCreate() {
-    if (this.options.customScrollbar) {
-      this.storage.customScrollbarProcessed = false;
-    }
-  },
-  onUpdate() {
-    if (this.options.customScrollbar && !this.storage.customScrollbarProcessed) {
-      const { state, view } = this.editor;
-      const tablePositions = [];
-      state.doc.descendants((node, pos) => {
-        if (node.type.name === "table") {
-          tablePositions.push(pos);
-        }
-      });
-      if (tablePositions.length > 0) {
-        console.log("[Table] onUpdate: Found", tablePositions.length, "table(s) - forcing re-render for custom scrollbar");
-        this.storage.customScrollbarProcessed = true;
-        let tr = state.tr;
-        for (let i = tablePositions.length - 1; i >= 0; i--) {
-          const pos = tablePositions[i];
-          const node = state.doc.nodeAt(pos);
-          if (node && node.type.name === "table") {
-            tr = tr.replaceWith(pos, pos + node.nodeSize, node.copy(node.content));
-          }
-        }
-        if (tr.docChanged) {
-          console.log("[Table] Dispatching transaction to re-render tables");
-          view.dispatch(tr);
-        }
-      }
-    }
   },
   extendNodeSchema(extension) {
     const context = {

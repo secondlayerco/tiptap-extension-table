@@ -474,6 +474,8 @@ export const Table = Node.create<TableOptions>({
   },
 
   addNodeView() {
+    // This is the clean solution: always create TableView with customScrollbar option
+    // This works for both new and existing tables, and for both resizable and non-resizable tables
     const customScrollbar = this.options.customScrollbar
     const cellMinWidth = this.options.cellMinWidth
 
@@ -488,43 +490,8 @@ export const Table = Node.create<TableOptions>({
 
   addProseMirrorPlugins() {
     const isResizable = this.options.resizable && this.editor.isEditable
-    const customScrollbar = this.options.customScrollbar
 
-    console.log('[Table] addProseMirrorPlugins called, isResizable:', isResizable, 'customScrollbar:', customScrollbar)
-
-    // Create a custom View wrapper that passes the customScrollbar option
-    // This is only used by columnResizing plugin when resizable is true
-    const CustomView = this.options.View && customScrollbar
-      ? class CustomTableView implements NodeView {
-          private tableView: InstanceType<typeof TableView>
-
-          node: ProseMirrorNode
-          dom: HTMLDivElement
-          contentDOM: HTMLTableSectionElement
-
-          constructor(node: ProseMirrorNode, cellMinWidth: number, view: EditorView, getPos?: () => number | undefined) {
-            console.log('[CustomTableView] Constructor called with customScrollbar:', customScrollbar)
-            this.tableView = new TableView(node, cellMinWidth, view, getPos, customScrollbar)
-            this.node = this.tableView.node
-            this.dom = this.tableView.dom
-            this.contentDOM = this.tableView.contentDOM
-          }
-
-          update(node: ProseMirrorNode) {
-            return this.tableView.update(node)
-          }
-
-          ignoreMutation(mutation: ViewMutationRecord) {
-            return this.tableView.ignoreMutation(mutation)
-          }
-
-          destroy() {
-            this.tableView.destroy()
-          }
-        }
-      : this.options.View
-
-    console.log('[Table] CustomView created:', !!CustomView, 'Will use columnResizing:', isResizable)
+    console.log('[Table] addProseMirrorPlugins called, isResizable:', isResizable)
 
     const plugins = [
       ...(isResizable
@@ -533,7 +500,8 @@ export const Table = Node.create<TableOptions>({
               handleWidth: this.options.handleWidth,
               cellMinWidth: this.options.cellMinWidth,
               defaultCellMinWidth: this.options.cellMinWidth,
-              View: CustomView,
+              // Don't pass a custom View to columnResizing - let addNodeView handle it
+              View: TableView,
               lastColumnResizable: this.options.lastColumnResizable,
             }),
           ]
@@ -545,55 +513,6 @@ export const Table = Node.create<TableOptions>({
     
     console.log('[Table] Returning plugins:', plugins.length, 'plugins')
     return plugins
-  },
-
-  onCreate() {
-    // Initialize storage to track if we've processed tables for custom scrollbar
-    if (this.options.customScrollbar) {
-      this.storage.customScrollbarProcessed = false
-    }
-  },
-
-  onUpdate() {
-    // Force re-render of existing tables when customScrollbar is enabled
-    // This runs on document update, catching tables loaded from API
-    // Use a flag to prevent infinite loops
-    if (this.options.customScrollbar && !this.storage.customScrollbarProcessed) {
-      const { state, view } = this.editor
-      const tablePositions: number[] = []
-      
-      state.doc.descendants((node, pos) => {
-        if (node.type.name === 'table') {
-          tablePositions.push(pos)
-        }
-      })
-      
-      if (tablePositions.length > 0) {
-        console.log('[Table] onUpdate: Found', tablePositions.length, 'table(s) - forcing re-render for custom scrollbar')
-        
-        // Set flag BEFORE dispatching to prevent infinite loop
-        this.storage.customScrollbarProcessed = true
-        
-        // Create a transaction that replaces each table with itself to trigger NodeView recreation
-        let tr = state.tr
-        
-        // Process tables in reverse order to maintain position integrity
-        for (let i = tablePositions.length - 1; i >= 0; i--) {
-          const pos = tablePositions[i]
-          const node = state.doc.nodeAt(pos)
-          
-          if (node && node.type.name === 'table') {
-            tr = tr.replaceWith(pos, pos + node.nodeSize, node.copy(node.content))
-          }
-        }
-        
-        // Dispatch the transaction
-        if (tr.docChanged) {
-          console.log('[Table] Dispatching transaction to re-render tables')
-          view.dispatch(tr)
-        }
-      }
-    }
   },
 
   extendNodeSchema(extension) {
