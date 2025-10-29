@@ -801,6 +801,7 @@ var Table = import_core2.Node.create({
         super(node, cellMinWidth, view, getPos, customScrollbar);
       }
     };
+    console.log("[Table] Created ViewForColumnResizing class, will use for columnResizing plugin");
     const plugins = [
       ...isResizable ? [
         (0, import_tables2.columnResizing)({

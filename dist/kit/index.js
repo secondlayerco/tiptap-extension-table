@@ -900,6 +900,7 @@ var Table = Node4.create({
         super(node, cellMinWidth, view, getPos, customScrollbar);
       }
     };
+    console.log("[Table] Created ViewForColumnResizing class, will use for columnResizing plugin");
     const plugins = [
       ...isResizable ? [
         columnResizing({
