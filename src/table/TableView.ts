@@ -172,9 +172,10 @@ export class TableView implements NodeView {
       // Update the cell attributes with the captured widths
       const { tr } = this.view.state
       let colIndex = 0
-      let cellPos = pos + 1 // Start after the table node
+      // Position calculation: table node starts at pos, first row at pos+1, first cell at pos+2
+      let cellPos = pos + 2
 
-      console.log('[TableView] Starting to update cell attributes')
+      console.log('[TableView] Starting to update cell attributes, initial cellPos:', cellPos)
 
       for (let i = 0; i < row.childCount; i += 1) {
         const cell = row.child(i)

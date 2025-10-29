@@ -145,8 +145,8 @@ var TableView = class {
       }
       const { tr } = this.view.state;
       let colIndex = 0;
-      let cellPos = pos + 1;
-      console.log("[TableView] Starting to update cell attributes");
+      let cellPos = pos + 2;
+      console.log("[TableView] Starting to update cell attributes, initial cellPos:", cellPos);
       for (let i = 0; i < row.childCount; i += 1) {
         const cell = row.child(i);
         const { colspan } = cell.attrs;
