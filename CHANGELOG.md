@@ -1,5 +1,10 @@
 # Change Log
 
+## [0.1.0-napkin] (2025-10-29)
+
+- Initial release
+- Auto-update column widths when the table is updated
+
 ## 3.8.0
 
 ### Patch Changes

@@ -18,11 +18,11 @@ var __copyProps = (to, from, except, desc) => {
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // src/kit/index.ts
-var kit_exports = {};
-__export(kit_exports, {
+var index_exports = {};
+__export(index_exports, {
   TableKit: () => TableKit
 });
-module.exports = __toCommonJS(kit_exports);
+module.exports = __toCommonJS(index_exports);
 var import_core6 = require("@tiptap/core");
 
 // src/cell/table-cell.ts
@@ -46,12 +46,11 @@ var TableCell = import_core.Node.create({
       colwidth: {
         default: null,
         parseHTML: (element) => {
-          var _a, _b;
           const colwidth = element.getAttribute("colwidth");
           const value = colwidth ? colwidth.split(",").map((width) => parseInt(width, 10)) : null;
           if (!value) {
-            const cols = (_a = element.closest("table")) == null ? void 0 : _a.querySelectorAll("colgroup > col");
-            const cellIndex = Array.from(((_b = element.parentElement) == null ? void 0 : _b.children) || []).indexOf(element);
+            const cols = element.closest("table")?.querySelectorAll("colgroup > col");
+            const cellIndex = Array.from(element.parentElement?.children || []).indexOf(element);
             if (cellIndex && cellIndex > -1 && cols && cols[cellIndex]) {
               const colWidth = cols[cellIndex].getAttribute("width");
               return colWidth ? [parseInt(colWidth, 10)] : null;
@@ -144,7 +143,6 @@ function getColStyleDeclaration(minWidth, width) {
 
 // src/table/TableView.ts
 function updateColumns(node, colgroup, table, cellMinWidth, overrideCol, overrideValue) {
-  var _a;
   let totalWidth = 0;
   let fixedWidth = true;
   let nextDOM = colgroup.firstChild;
@@ -176,7 +174,7 @@ function updateColumns(node, colgroup, table, cellMinWidth, overrideCol, overrid
   }
   while (nextDOM) {
     const after = nextDOM.nextSibling;
-    (_a = nextDOM.parentNode) == null ? void 0 : _a.removeChild(nextDOM);
+    nextDOM.parentNode?.removeChild(nextDOM);
     nextDOM = after;
   }
   if (fixedWidth) {
@@ -189,7 +187,6 @@ function updateColumns(node, colgroup, table, cellMinWidth, overrideCol, overrid
 }
 var TableView = class {
   constructor(node, cellMinWidth, view, getPos) {
-    this.hasSetInitialWidths = false;
     this.node = node;
     this.cellMinWidth = cellMinWidth;
     this.view = view;
@@ -200,70 +197,62 @@ var TableView = class {
     this.colgroup = this.table.appendChild(document.createElement("colgroup"));
     updateColumns(node, this.colgroup, this.table, cellMinWidth);
     this.contentDOM = this.table.appendChild(document.createElement("tbody"));
-    const needsInitialWidths = this.checkIfNeedsInitialWidths();
-    if (needsInitialWidths) {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          this.captureAndSetInitialWidths();
-        });
-      });
-    }
+    this.captureColumnWidths();
   }
-  checkIfNeedsInitialWidths() {
-    const row = this.node.firstChild;
-    if (!row)
-      return false;
-    for (let i = 0; i < row.childCount; i += 1) {
-      const cell = row.child(i);
-      if (cell.attrs.colwidth && cell.attrs.colwidth.some((w) => w !== null && w !== void 0)) {
-        return false;
-      }
-    }
-    return true;
-  }
-  captureAndSetInitialWidths() {
-    if (this.hasSetInitialWidths)
-      return;
-    const pos = this.getPos();
-    if (pos === void 0)
-      return;
-    const row = this.node.firstChild;
-    if (!row)
-      return;
-    const cols = Array.from(this.colgroup.querySelectorAll("col"));
-    if (cols.length === 0)
-      return;
-    const { state, dispatch } = this.view;
-    const tr = state.tr;
-    let colIndex = 0;
-    let modified = false;
-    let cellPos = pos + 2;
-    for (let cellIndex = 0; cellIndex < row.childCount; cellIndex += 1) {
-      const cell = row.child(cellIndex);
-      const { colspan } = cell.attrs;
-      const colwidths = [];
-      for (let j = 0; j < colspan; j += 1) {
-        const col = cols[colIndex + j];
-        if (col) {
-          const computedWidth = col.getBoundingClientRect().width;
-          const width = Math.max(Math.round(computedWidth), this.cellMinWidth);
-          colwidths.push(width);
+  /**
+   * Captures the actual rendered column widths from the browser and updates the node
+   * attributes if columns don't already have explicit widths set.
+   */
+  captureColumnWidths() {
+    requestAnimationFrame(() => {
+      if (!this.view || !this.getPos) return;
+      const pos = this.getPos();
+      if (pos === void 0) return;
+      const row = this.node.firstChild;
+      if (!row) return;
+      let needsWidths = false;
+      for (let i = 0; i < row.childCount; i += 1) {
+        const cell = row.child(i);
+        if (!cell.attrs.colwidth) {
+          needsWidths = true;
+          break;
         }
       }
-      if (colwidths.length > 0 && colwidths.some((w) => w > 0)) {
-        tr.setNodeMarkup(cellPos, void 0, {
-          ...cell.attrs,
-          colwidth: colwidths
-        });
-        modified = true;
+      if (!needsWidths) return;
+      const cols = this.colgroup.querySelectorAll("col");
+      const colWidths = [];
+      cols.forEach((col) => {
+        const width = col.offsetWidth;
+        colWidths.push(width);
+      });
+      if (colWidths.length === 0) return;
+      const { tr } = this.view.state;
+      let colIndex = 0;
+      let cellPos = pos + 1;
+      for (let i = 0; i < row.childCount; i += 1) {
+        const cell = row.child(i);
+        const { colspan } = cell.attrs;
+        if (!cell.attrs.colwidth) {
+          const cellWidths = [];
+          for (let j = 0; j < colspan; j += 1) {
+            if (colIndex + j < colWidths.length) {
+              cellWidths.push(colWidths[colIndex + j]);
+            }
+          }
+          if (cellWidths.length > 0) {
+            tr.setNodeMarkup(cellPos, void 0, {
+              ...cell.attrs,
+              colwidth: cellWidths
+            });
+          }
+        }
+        colIndex += colspan;
+        cellPos += cell.nodeSize;
       }
-      colIndex += colspan;
-      cellPos += cell.nodeSize;
-    }
-    if (modified) {
-      dispatch(tr);
-      this.hasSetInitialWidths = true;
-    }
+      if (tr.docChanged) {
+        this.view.dispatch(tr);
+      }
+    });
   }
   update(node) {
     if (node.type !== this.node.type) {
@@ -380,7 +369,7 @@ var deleteTableWhenAllCellsSelected = ({ editor }) => {
   const table = (0, import_core4.findParentNodeClosestToPos)(selection.ranges[0].$from, (node) => {
     return node.type.name === "table";
   });
-  table == null ? void 0 : table.node.descendants((node) => {
+  table?.node.descendants((node) => {
     if (node.type.name === "table") {
       return false;
     }
@@ -402,8 +391,7 @@ function collapseWhitespace(s) {
   return (s || "").replace(/\s+/g, " ").trim();
 }
 function renderTableToMarkdown(node, h, options = {}) {
-  var _a;
-  const cellSep = (_a = options.cellLineSeparator) != null ? _a : DEFAULT_CELL_LINE_SEPARATOR;
+  const cellSep = options.cellLineSeparator ?? DEFAULT_CELL_LINE_SEPARATOR;
   if (!node || !node.content || node.content.length === 0) {
     return "";
   }
@@ -432,9 +420,8 @@ function renderTableToMarkdown(node, h, options = {}) {
   }
   const colWidths = new Array(columnCount).fill(0);
   rows.forEach((r) => {
-    var _a2;
     for (let i = 0; i < columnCount; i += 1) {
-      const cell = ((_a2 = r[i]) == null ? void 0 : _a2.text) || "";
+      const cell = r[i]?.text || "";
       const len = cell.length;
       if (len > colWidths[i]) {
         colWidths[i] = len;
@@ -465,12 +452,14 @@ var markdown_default = renderTableToMarkdown;
 // src/table/table.ts
 var Table = import_core5.Node.create({
   name: "table",
+  // @ts-ignore
   addOptions() {
     return {
       HTMLAttributes: {},
       resizable: false,
       handleWidth: 5,
       cellMinWidth: 25,
+      // TODO: fix
       View: TableView,
       lastColumnResizable: true,
       allowTableNodeSelection: false
@@ -619,6 +608,7 @@ var Table = import_core5.Node.create({
         (0, import_tables2.columnResizing)({
           handleWidth: this.options.handleWidth,
           cellMinWidth: this.options.cellMinWidth,
+          defaultCellMinWidth: this.options.cellMinWidth,
           View: this.options.View,
           lastColumnResizable: this.options.lastColumnResizable
         })

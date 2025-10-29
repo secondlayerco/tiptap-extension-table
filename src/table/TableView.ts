@@ -1,5 +1,5 @@
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
-import type { NodeView, ViewMutationRecord } from '@tiptap/pm/view'
+import type { EditorView, NodeView, ViewMutationRecord } from '@tiptap/pm/view'
 
 import { getColStyleDeclaration } from './utilities/colStyle.js'
 
@@ -80,15 +80,98 @@ export class TableView implements NodeView {
 
   contentDOM: HTMLTableSectionElement
 
-  constructor(node: ProseMirrorNode, cellMinWidth: number) {
+  view?: EditorView
+
+  getPos?: () => number | undefined
+
+  constructor(node: ProseMirrorNode, cellMinWidth: number, view?: EditorView, getPos?: () => number | undefined) {
     this.node = node
     this.cellMinWidth = cellMinWidth
+    this.view = view
+    this.getPos = getPos
     this.dom = document.createElement('div')
     this.dom.className = 'tableWrapper'
     this.table = this.dom.appendChild(document.createElement('table'))
     this.colgroup = this.table.appendChild(document.createElement('colgroup'))
     updateColumns(node, this.colgroup, this.table, cellMinWidth)
     this.contentDOM = this.table.appendChild(document.createElement('tbody'))
+
+    // After the browser has laid out the table, capture the actual column widths
+    this.captureColumnWidths()
+  }
+
+  /**
+   * Captures the actual rendered column widths from the browser and updates the node
+   * attributes if columns don't already have explicit widths set.
+   */
+  private captureColumnWidths() {
+    // Use requestAnimationFrame to ensure the browser has finished layout
+    requestAnimationFrame(() => {
+      if (!this.view || !this.getPos) return
+
+      const pos = this.getPos()
+      if (pos === undefined) return
+
+      const row = this.node.firstChild
+      if (!row) return
+
+      // Check if we need to set widths (only if columns don't have widths)
+      let needsWidths = false
+      for (let i = 0; i < row.childCount; i += 1) {
+        const cell = row.child(i)
+        if (!cell.attrs.colwidth) {
+          needsWidths = true
+          break
+        }
+      }
+
+      if (!needsWidths) return
+
+      // Get the actual rendered column widths
+      const cols = this.colgroup.querySelectorAll('col')
+      const colWidths: number[] = []
+
+      cols.forEach(col => {
+        const width = (col as HTMLElement).offsetWidth
+        colWidths.push(width)
+      })
+
+      if (colWidths.length === 0) return
+
+      // Update the cell attributes with the captured widths
+      const { tr } = this.view.state
+      let colIndex = 0
+      let cellPos = pos + 1 // Start after the table node
+
+      for (let i = 0; i < row.childCount; i += 1) {
+        const cell = row.child(i)
+        const { colspan } = cell.attrs
+
+        // Only update if the cell doesn't already have colwidth
+        if (!cell.attrs.colwidth) {
+          const cellWidths: number[] = []
+          for (let j = 0; j < colspan; j += 1) {
+            if (colIndex + j < colWidths.length) {
+              cellWidths.push(colWidths[colIndex + j])
+            }
+          }
+
+          if (cellWidths.length > 0) {
+            tr.setNodeMarkup(cellPos, undefined, {
+              ...cell.attrs,
+              colwidth: cellWidths,
+            })
+          }
+        }
+
+        colIndex += colspan
+        cellPos += cell.nodeSize
+      }
+
+      if (tr.docChanged) {
+        this.view.dispatch(tr)
+      }
+    })
   }
 
   update(node: ProseMirrorNode) {

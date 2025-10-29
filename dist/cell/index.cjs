@@ -18,11 +18,11 @@ var __copyProps = (to, from, except, desc) => {
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // src/cell/index.ts
-var cell_exports = {};
-__export(cell_exports, {
+var index_exports = {};
+__export(index_exports, {
   TableCell: () => TableCell
 });
-module.exports = __toCommonJS(cell_exports);
+module.exports = __toCommonJS(index_exports);
 
 // src/cell/table-cell.ts
 var import_core = require("@tiptap/core");
@@ -45,12 +45,11 @@ var TableCell = import_core.Node.create({
       colwidth: {
         default: null,
         parseHTML: (element) => {
-          var _a, _b;
           const colwidth = element.getAttribute("colwidth");
           const value = colwidth ? colwidth.split(",").map((width) => parseInt(width, 10)) : null;
           if (!value) {
-            const cols = (_a = element.closest("table")) == null ? void 0 : _a.querySelectorAll("colgroup > col");
-            const cellIndex = Array.from(((_b = element.parentElement) == null ? void 0 : _b.children) || []).indexOf(element);
+            const cols = element.closest("table")?.querySelectorAll("colgroup > col");
+            const cellIndex = Array.from(element.parentElement?.children || []).indexOf(element);
             if (cellIndex && cellIndex > -1 && cols && cols[cellIndex]) {
               const colWidth = cols[cellIndex].getAttribute("width");
               return colWidth ? [parseInt(colWidth, 10)] : null;

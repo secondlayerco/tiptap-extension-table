@@ -18,11 +18,11 @@ var __copyProps = (to, from, except, desc) => {
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // src/header/index.ts
-var header_exports = {};
-__export(header_exports, {
+var index_exports = {};
+__export(index_exports, {
   TableHeader: () => TableHeader
 });
-module.exports = __toCommonJS(header_exports);
+module.exports = __toCommonJS(index_exports);
 
 // src/header/table-header.ts
 var import_core = require("@tiptap/core");

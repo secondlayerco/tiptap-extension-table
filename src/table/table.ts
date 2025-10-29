@@ -75,7 +75,7 @@ export interface TableOptions {
    * The node view to render the table.
    * @default TableView
    */
-  View: (new (node: ProseMirrorNode, cellMinWidth: number, view: EditorView) => NodeView) | null
+  View: (new (node: ProseMirrorNode, cellMinWidth: number, view: EditorView, getPos?: () => number | undefined) => NodeView) | null
 
   /**
    * Enables the resizing of the last column.
