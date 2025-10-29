@@ -485,6 +485,8 @@ export const Table = Node.create<TableOptions>({
     const isResizable = this.options.resizable && this.editor.isEditable
     const customScrollbar = this.options.customScrollbar
 
+    console.log('[Table] addProseMirrorPlugins called, isResizable:', isResizable, 'customScrollbar:', customScrollbar)
+
     // Create a custom View wrapper that passes the customScrollbar option
     // This is only used by columnResizing plugin when resizable is true
     const CustomView = this.options.View && customScrollbar
@@ -496,6 +498,7 @@ export const Table = Node.create<TableOptions>({
           contentDOM: HTMLTableSectionElement
 
           constructor(node: ProseMirrorNode, cellMinWidth: number, view: EditorView, getPos?: () => number | undefined) {
+            console.log('[CustomTableView] Constructor called with customScrollbar:', customScrollbar)
             this.tableView = new TableView(node, cellMinWidth, view, getPos, customScrollbar)
             this.node = this.tableView.node
             this.dom = this.tableView.dom
@@ -515,6 +518,8 @@ export const Table = Node.create<TableOptions>({
           }
         }
       : this.options.View
+
+    console.log('[Table] CustomView created:', !!CustomView, 'Will use columnResizing:', isResizable)
 
     return [
       ...(isResizable

@@ -782,8 +782,10 @@ var Table = Node.create({
   addProseMirrorPlugins() {
     const isResizable = this.options.resizable && this.editor.isEditable;
     const customScrollbar = this.options.customScrollbar;
+    console.log("[Table] addProseMirrorPlugins called, isResizable:", isResizable, "customScrollbar:", customScrollbar);
     const CustomView = this.options.View && customScrollbar ? class CustomTableView {
       constructor(node, cellMinWidth, view, getPos) {
+        console.log("[CustomTableView] Constructor called with customScrollbar:", customScrollbar);
         this.tableView = new TableView(node, cellMinWidth, view, getPos, customScrollbar);
         this.node = this.tableView.node;
         this.dom = this.tableView.dom;
@@ -799,6 +801,7 @@ var Table = Node.create({
         this.tableView.destroy();
       }
     } : this.options.View;
+    console.log("[Table] CustomView created:", !!CustomView, "Will use columnResizing:", isResizable);
     return [
       ...isResizable ? [
         columnResizing({
