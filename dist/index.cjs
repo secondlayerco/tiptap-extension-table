@@ -217,34 +217,59 @@ var TableView = class {
    * attributes if columns don't already have explicit widths set.
    */
   captureColumnWidths() {
+    console.log("[TableView] captureColumnWidths called");
     requestAnimationFrame(() => {
-      if (!this.view || !this.getPos) return;
+      console.log("[TableView] requestAnimationFrame callback executing");
+      if (!this.view || !this.getPos) {
+        console.log("[TableView] Missing view or getPos:", { view: !!this.view, getPos: !!this.getPos });
+        return;
+      }
       const pos = this.getPos();
-      if (pos === void 0) return;
+      console.log("[TableView] Table position:", pos);
+      if (pos === void 0) {
+        console.log("[TableView] Position is undefined, exiting");
+        return;
+      }
       const row = this.node.firstChild;
-      if (!row) return;
+      if (!row) {
+        console.log("[TableView] No first row found");
+        return;
+      }
+      console.log("[TableView] First row has", row.childCount, "cells");
       let needsWidths = false;
       for (let i = 0; i < row.childCount; i += 1) {
         const cell = row.child(i);
+        console.log(`[TableView] Cell ${i} colwidth:`, cell.attrs.colwidth);
         if (!cell.attrs.colwidth) {
           needsWidths = true;
-          break;
         }
       }
-      if (!needsWidths) return;
+      console.log("[TableView] Needs widths:", needsWidths);
+      if (!needsWidths) {
+        console.log("[TableView] All cells already have widths, exiting");
+        return;
+      }
       const cols = this.colgroup.querySelectorAll("col");
+      console.log("[TableView] Found", cols.length, "col elements");
       const colWidths = [];
-      cols.forEach((col) => {
+      cols.forEach((col, idx) => {
         const width = col.offsetWidth;
+        console.log(`[TableView] Col ${idx} offsetWidth:`, width);
         colWidths.push(width);
       });
-      if (colWidths.length === 0) return;
+      console.log("[TableView] Collected widths:", colWidths);
+      if (colWidths.length === 0) {
+        console.log("[TableView] No widths collected, exiting");
+        return;
+      }
       const { tr } = this.view.state;
       let colIndex = 0;
       let cellPos = pos + 1;
+      console.log("[TableView] Starting to update cell attributes");
       for (let i = 0; i < row.childCount; i += 1) {
         const cell = row.child(i);
         const { colspan } = cell.attrs;
+        console.log(`[TableView] Processing cell ${i}, colspan: ${colspan}, cellPos: ${cellPos}`);
         if (!cell.attrs.colwidth) {
           const cellWidths = [];
           for (let j = 0; j < colspan; j += 1) {
@@ -252,6 +277,7 @@ var TableView = class {
               cellWidths.push(colWidths[colIndex + j]);
             }
           }
+          console.log(`[TableView] Cell ${i} will get widths:`, cellWidths);
           if (cellWidths.length > 0) {
             tr.setNodeMarkup(cellPos, void 0, {
               ...cell.attrs,
@@ -262,8 +288,12 @@ var TableView = class {
         colIndex += colspan;
         cellPos += cell.nodeSize;
       }
+      console.log("[TableView] Transaction docChanged:", tr.docChanged);
       if (tr.docChanged) {
+        console.log("[TableView] Dispatching transaction");
         this.view.dispatch(tr);
+      } else {
+        console.log("[TableView] No changes to dispatch");
       }
     });
   }
