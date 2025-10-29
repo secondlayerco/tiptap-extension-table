@@ -526,7 +526,7 @@ export const Table = Node.create<TableOptions>({
 
     console.log('[Table] CustomView created:', !!CustomView, 'Will use columnResizing:', isResizable)
 
-    return [
+    const plugins = [
       ...(isResizable
         ? [
             columnResizing({
@@ -542,6 +542,9 @@ export const Table = Node.create<TableOptions>({
         allowTableNodeSelection: this.options.allowTableNodeSelection,
       }),
     ]
+    
+    console.log('[Table] Returning plugins:', plugins.length, 'plugins')
+    return plugins
   },
 
   extendNodeSchema(extension) {

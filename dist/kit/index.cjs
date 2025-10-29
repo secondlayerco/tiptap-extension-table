@@ -913,7 +913,7 @@ var Table = import_core5.Node.create({
       }
     } : this.options.View;
     console.log("[Table] CustomView created:", !!CustomView, "Will use columnResizing:", isResizable);
-    return [
+    const plugins = [
       ...isResizable ? [
         (0, import_tables2.columnResizing)({
           handleWidth: this.options.handleWidth,
@@ -927,6 +927,8 @@ var Table = import_core5.Node.create({
         allowTableNodeSelection: this.options.allowTableNodeSelection
       })
     ];
+    console.log("[Table] Returning plugins:", plugins.length, "plugins");
+    return plugins;
   },
   extendNodeSchema(extension) {
     const context = {

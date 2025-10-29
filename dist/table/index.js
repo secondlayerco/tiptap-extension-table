@@ -806,7 +806,7 @@ var Table = Node.create({
       }
     } : this.options.View;
     console.log("[Table] CustomView created:", !!CustomView, "Will use columnResizing:", isResizable);
-    return [
+    const plugins = [
       ...isResizable ? [
         columnResizing({
           handleWidth: this.options.handleWidth,
@@ -820,6 +820,8 @@ var Table = Node.create({
         allowTableNodeSelection: this.options.allowTableNodeSelection
       })
     ];
+    console.log("[Table] Returning plugins:", plugins.length, "plugins");
+    return plugins;
   },
   extendNodeSchema(extension) {
     const context = {
