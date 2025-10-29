@@ -204,26 +204,47 @@ export class TableView implements NodeView {
       }
 
       console.log('[TableView] Transaction docChanged:', tr.docChanged)
+      console.log('[TableView] Transaction steps:', tr.steps.length)
 
       if (tr.docChanged) {
         console.log('[TableView] Dispatching transaction')
         this.view.dispatch(tr)
+        console.log('[TableView] Transaction dispatched')
         
-        // Force update the colgroup immediately after transaction
-        // The transaction will update the node, but we need to force updateColumns to reflect changes in DOM
-        requestAnimationFrame(() => {
-          if (!this.view) return
+        // Wait a bit longer to ensure the transaction has been applied
+        setTimeout(() => {
+          if (!this.view || !this.getPos) {
+            console.log('[TableView] View or getPos lost after dispatch')
+            return
+          }
+          
+          const currentPos = this.getPos()
+          console.log('[TableView] Current position after dispatch:', currentPos)
+          
+          if (currentPos === undefined) {
+            console.log('[TableView] Position undefined after dispatch')
+            return
+          }
           
           console.log('[TableView] Forcing colgroup update after transaction')
           // Get the updated node from the document
-          const updatedNode = this.view.state.doc.nodeAt(pos)
+          const updatedNode = this.view.state.doc.nodeAt(currentPos)
           if (updatedNode) {
-            console.log('[TableView] Updating columns with new node')
+            console.log('[TableView] Got updated node from document')
+            console.log('[TableView] Updated node first child colwidth:', updatedNode.firstChild?.child(0).attrs.colwidth)
             this.node = updatedNode
             updateColumns(updatedNode, this.colgroup, this.table, this.cellMinWidth)
-            console.log('[TableView] Colgroup columns updated')
+            console.log('[TableView] Colgroup columns updated with updateColumns')
+            
+            // Also log the actual DOM state
+            const cols = this.colgroup.querySelectorAll('col')
+            cols.forEach((col, idx) => {
+              console.log(`[TableView] After update - Col ${idx} style.width:`, (col as HTMLElement).style.width)
+            })
+          } else {
+            console.log('[TableView] Could not get updated node from document')
           }
-        })
+        }, 100)
       } else {
         console.log('[TableView] No changes to dispatch')
       }

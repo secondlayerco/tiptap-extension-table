@@ -287,20 +287,38 @@ var TableView = class {
         cellPos += cell.nodeSize;
       }
       console.log("[TableView] Transaction docChanged:", tr.docChanged);
+      console.log("[TableView] Transaction steps:", tr.steps.length);
       if (tr.docChanged) {
         console.log("[TableView] Dispatching transaction");
         this.view.dispatch(tr);
-        requestAnimationFrame(() => {
-          if (!this.view) return;
+        console.log("[TableView] Transaction dispatched");
+        setTimeout(() => {
+          if (!this.view || !this.getPos) {
+            console.log("[TableView] View or getPos lost after dispatch");
+            return;
+          }
+          const currentPos = this.getPos();
+          console.log("[TableView] Current position after dispatch:", currentPos);
+          if (currentPos === void 0) {
+            console.log("[TableView] Position undefined after dispatch");
+            return;
+          }
           console.log("[TableView] Forcing colgroup update after transaction");
-          const updatedNode = this.view.state.doc.nodeAt(pos);
+          const updatedNode = this.view.state.doc.nodeAt(currentPos);
           if (updatedNode) {
-            console.log("[TableView] Updating columns with new node");
+            console.log("[TableView] Got updated node from document");
+            console.log("[TableView] Updated node first child colwidth:", updatedNode.firstChild?.child(0).attrs.colwidth);
             this.node = updatedNode;
             updateColumns(updatedNode, this.colgroup, this.table, this.cellMinWidth);
-            console.log("[TableView] Colgroup columns updated");
+            console.log("[TableView] Colgroup columns updated with updateColumns");
+            const cols2 = this.colgroup.querySelectorAll("col");
+            cols2.forEach((col, idx) => {
+              console.log(`[TableView] After update - Col ${idx} style.width:`, col.style.width);
+            });
+          } else {
+            console.log("[TableView] Could not get updated node from document");
           }
-        });
+        }, 100);
       } else {
         console.log("[TableView] No changes to dispatch");
       }
