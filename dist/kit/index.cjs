@@ -724,11 +724,13 @@ function renderTableToMarkdown(node, h, options = {}) {
 var markdown_default = renderTableToMarkdown;
 
 // src/table/table.ts
+console.log("[Table Extension] Module loaded");
 var Table = import_core5.Node.create({
   name: "table",
   // @ts-ignore
   addOptions() {
-    return {
+    console.log("[Table] addOptions called");
+    const options = {
       HTMLAttributes: {},
       resizable: false,
       handleWidth: 5,
@@ -739,6 +741,8 @@ var Table = import_core5.Node.create({
       allowTableNodeSelection: false,
       customScrollbar: false
     };
+    console.log("[Table] Default options:", options);
+    return options;
   },
   content: "tableRow+",
   tableRole: "table",

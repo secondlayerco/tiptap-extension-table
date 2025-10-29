@@ -243,6 +243,8 @@ declare module '@tiptap/core' {
   }
 }
 
+console.log('[Table Extension] Module loaded')
+
 /**
  * This extension allows you to create tables.
  * @see https://www.tiptap.dev/api/nodes/table
@@ -252,7 +254,8 @@ export const Table = Node.create<TableOptions>({
 
   // @ts-ignore
   addOptions() {
-    return {
+    console.log('[Table] addOptions called')
+    const options = {
       HTMLAttributes: {},
       resizable: false,
       handleWidth: 5,
@@ -263,6 +266,8 @@ export const Table = Node.create<TableOptions>({
       allowTableNodeSelection: false,
       customScrollbar: false,
     }
+    console.log('[Table] Default options:', options)
+    return options
   },
 
   content: 'tableRow+',
