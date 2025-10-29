@@ -36,40 +36,29 @@ function getColStyleDeclaration(minWidth, width) {
 
 // src/table/TableView.ts
 function updateColumns(node, colgroup, table, cellMinWidth, overrideCol, overrideValue) {
-  console.log("[TableView] updateColumns called with cellMinWidth:", cellMinWidth, "type:", typeof cellMinWidth);
   let totalWidth = 0;
   let fixedWidth = true;
   let nextDOM = colgroup.firstChild;
   const row = node.firstChild;
   if (row !== null) {
-    console.log("[TableView] updateColumns - Row has", row.childCount, "cells");
     for (let i = 0, col = 0; i < row.childCount; i += 1) {
       const { colspan, colwidth } = row.child(i).attrs;
-      console.log(`[TableView] updateColumns - Cell ${i} colwidth:`, colwidth);
       for (let j = 0; j < colspan; j += 1, col += 1) {
         const hasWidth = overrideCol === col ? overrideValue : colwidth && colwidth[j];
         const cssWidth = hasWidth ? `${hasWidth}px` : "";
-        console.log(`[TableView] updateColumns - Col ${col}: hasWidth=${hasWidth}, cssWidth=${cssWidth}`);
         totalWidth += hasWidth || cellMinWidth;
         if (!hasWidth) {
           fixedWidth = false;
         }
         if (!nextDOM) {
-          console.log(`[TableView] updateColumns - Creating new col element for col ${col}`);
           const colElement = document.createElement("col");
           const [propertyKey, propertyValue] = getColStyleDeclaration(cellMinWidth, hasWidth);
-          console.log(`[TableView] updateColumns - Setting ${propertyKey}: ${propertyValue}`);
           colElement.style.setProperty(propertyKey, propertyValue);
           colgroup.appendChild(colElement);
         } else {
-          const currentWidth = nextDOM.style.width;
-          console.log(`[TableView] updateColumns - Col ${col} current width: "${currentWidth}", target: "${cssWidth}"`);
           if (nextDOM.style.width !== cssWidth) {
             const [propertyKey, propertyValue] = getColStyleDeclaration(cellMinWidth, hasWidth);
-            console.log(`[TableView] updateColumns - Updating col ${col} with ${propertyKey}: ${propertyValue}`);
             nextDOM.style.setProperty(propertyKey, propertyValue);
-          } else {
-            console.log(`[TableView] updateColumns - Col ${col} already has correct width, skipping`);
           }
           nextDOM = nextDOM.nextSibling;
         }
@@ -91,7 +80,6 @@ function updateColumns(node, colgroup, table, cellMinWidth, overrideCol, overrid
 }
 var TableView = class {
   constructor(node, cellMinWidth = 25, view, getPos) {
-    console.log("[TableView] constructor called with cellMinWidth:", cellMinWidth, "view:", !!view, "getPos:", !!getPos);
     this.node = node;
     this.cellMinWidth = cellMinWidth || 25;
     this.view = view;
@@ -110,13 +98,10 @@ var TableView = class {
    * calculate natural widths, then captures and persists those widths.
    */
   captureColumnWidths() {
-    console.log("[TableView] captureColumnWidths called");
     if (!this.view || !this.getPos) {
-      console.log("[TableView] Missing view or getPos:", { view: !!this.view, getPos: !!this.getPos });
       return;
     }
     requestAnimationFrame(() => {
-      console.log("[TableView] Initial render complete");
       if (!this.view || !this.getPos) {
         return;
       }
@@ -125,15 +110,12 @@ var TableView = class {
         return;
       }
       const cols = this.colgroup.querySelectorAll("col");
-      console.log("[TableView] Temporarily removing col constraints");
-      const originalStyles = [];
-      cols.forEach((col, idx) => {
-        originalStyles[idx] = col.style.width;
+      cols.forEach((col) => {
+        ;
         col.style.width = "";
         col.style.minWidth = "";
       });
       requestAnimationFrame(() => {
-        console.log("[TableView] Browser recalculated, capturing widths");
         if (!this.view || !this.getPos) {
           return;
         }
@@ -142,27 +124,21 @@ var TableView = class {
           return;
         }
         const colWidths = [];
-        cols.forEach((col, idx) => {
-          const width = col.offsetWidth;
-          console.log(`[TableView] Col ${idx} browser-calculated offsetWidth:`, width);
-          colWidths.push(width);
+        cols.forEach((col) => {
+          colWidths.push(col.offsetWidth);
         });
         if (colWidths.length === 0) {
-          console.log("[TableView] No widths captured");
           return;
         }
         const currentNode = this.view.state.doc.nodeAt(currentPos);
         if (!currentNode || !currentNode.firstChild) {
-          console.log("[TableView] Could not get current node");
           return;
         }
-        const row = currentNode.firstChild;
-        console.log("[TableView] Building new table structure with captured widths");
         const newRows = [];
-        currentNode.forEach((tableRow, rowOffset, rowIndex) => {
+        currentNode.forEach((tableRow) => {
           const newCells = [];
           let colIndex = 0;
-          tableRow.forEach((cell, cellOffset, cellIndex) => {
+          tableRow.forEach((cell) => {
             const { colspan } = cell.attrs;
             const cellWidths = [];
             for (let j = 0; j < colspan; j += 1) {
@@ -170,7 +146,6 @@ var TableView = class {
                 cellWidths.push(colWidths[colIndex + j]);
               }
             }
-            console.log(`[TableView] Row ${rowIndex} Cell ${cellIndex} (colspan ${colspan}) will get widths:`, cellWidths);
             const newAttrs = { ...cell.attrs, colwidth: cellWidths.length > 0 ? cellWidths : cell.attrs.colwidth };
             const newCell = cell.type.create(newAttrs, cell.content, cell.marks);
             newCells.push(newCell);
@@ -180,11 +155,8 @@ var TableView = class {
           newRows.push(newRow);
         });
         const newTable = currentNode.type.create(currentNode.attrs, newRows, currentNode.marks);
-        console.log("[TableView] Replacing table node");
         const tr = this.view.state.tr.replaceWith(currentPos, currentPos + currentNode.nodeSize, newTable);
-        console.log("[TableView] Transaction has", tr.steps.length, "steps, docChanged:", tr.docChanged);
         if (tr.docChanged) {
-          console.log("[TableView] Dispatching transaction");
           this.view.dispatch(tr);
           setTimeout(() => {
             if (!this.view || !this.getPos) {
@@ -196,17 +168,8 @@ var TableView = class {
             }
             const finalNode = this.view.state.doc.nodeAt(finalPos);
             if (finalNode) {
-              console.log("[TableView] Forcing colgroup update with final node");
-              console.log("[TableView] Final node cells:", finalNode.firstChild?.childCount);
-              finalNode.firstChild?.forEach((cell, idx) => {
-                console.log(`[TableView] Final cell ${idx} colwidth:`, cell.attrs.colwidth);
-              });
               this.node = finalNode;
               updateColumns(finalNode, this.colgroup, this.table, this.cellMinWidth);
-              const finalCols = this.colgroup.querySelectorAll("col");
-              finalCols.forEach((col, idx) => {
-                console.log(`[TableView] Final col ${idx} style.width:`, col.style.width);
-              });
             }
           }, 100);
         }
@@ -217,7 +180,6 @@ var TableView = class {
     if (node.type !== this.node.type) {
       return false;
     }
-    console.log("[TableView] update() called, this.cellMinWidth:", this.cellMinWidth);
     this.node = node;
     updateColumns(node, this.colgroup, this.table, this.cellMinWidth);
     return true;
