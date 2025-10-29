@@ -474,11 +474,12 @@ export const Table = Node.create<TableOptions>({
   },
 
   addNodeView() {
-    // This handles non-resizable tables
+    // This handles ALL tables - both resizable and non-resizable
+    // The customScrollbar value is captured in the closure
     const customScrollbar = this.options.customScrollbar
     const cellMinWidth = this.options.cellMinWidth
 
-    console.log('[Table] addNodeView called, customScrollbar:', customScrollbar)
+    console.log('[Table] addNodeView called, customScrollbar:', customScrollbar, 'cellMinWidth:', cellMinWidth)
 
     return ({ node, view, getPos }: { node: ProseMirrorNode; view: EditorView; getPos: boolean | (() => number | undefined) }) => {
       const getPosFunc = typeof getPos === 'function' ? getPos : undefined
@@ -489,20 +490,8 @@ export const Table = Node.create<TableOptions>({
 
   addProseMirrorPlugins() {
     const isResizable = this.options.resizable && this.editor.isEditable
-    const customScrollbar = this.options.customScrollbar
-    const cellMinWidth = this.options.cellMinWidth
 
-    console.log('[Table] addProseMirrorPlugins called, isResizable:', isResizable, 'customScrollbar:', customScrollbar)
-
-    // When resizable, columnResizing plugin needs a View that passes customScrollbar
-    const ViewForColumnResizing = class extends TableView {
-      constructor(node: ProseMirrorNode, _cellMinWidth: number, view: EditorView, getPos?: () => number | undefined) {
-        console.log('[ViewForColumnResizing] Constructor called with customScrollbar:', customScrollbar)
-        super(node, cellMinWidth, view, getPos, customScrollbar)
-      }
-    }
-    
-    console.log('[Table] Created ViewForColumnResizing class, will use for columnResizing plugin')
+    console.log('[Table] addProseMirrorPlugins called, isResizable:', isResizable)
 
     const plugins = [
       ...(isResizable
@@ -511,7 +500,7 @@ export const Table = Node.create<TableOptions>({
               handleWidth: this.options.handleWidth,
               cellMinWidth: this.options.cellMinWidth,
               defaultCellMinWidth: this.options.cellMinWidth,
-              View: ViewForColumnResizing,
+              // Don't pass View parameter - let addNodeView() handle all view creation
               lastColumnResizable: this.options.lastColumnResizable,
             }),
           ]
