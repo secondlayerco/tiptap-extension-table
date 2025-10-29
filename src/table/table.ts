@@ -547,6 +547,33 @@ export const Table = Node.create<TableOptions>({
     return plugins
   },
 
+  onCreate() {
+    // Force re-render of existing tables when customScrollbar is enabled
+    if (this.options.customScrollbar) {
+      console.log('[Table] onCreate: Forcing re-render of existing tables for customScrollbar')
+      
+      // Use a small delay to ensure editor is fully initialized
+      setTimeout(() => {
+        const { tr } = this.editor.state
+        let modified = false
+
+        this.editor.state.doc.descendants((node, pos) => {
+          if (node.type.name === 'table') {
+            console.log('[Table] Found existing table at position', pos, '- forcing re-render')
+            // Replace the table node with itself to trigger NodeView recreation
+            tr.replaceWith(pos, pos + node.nodeSize, node.copy(node.content))
+            modified = true
+          }
+        })
+
+        if (modified) {
+          console.log('[Table] Dispatching transaction to re-render existing tables')
+          this.editor.view.dispatch(tr)
+        }
+      }, 100)
+    }
+  },
+
   extendNodeSchema(extension) {
     const context = {
       name: extension.name,

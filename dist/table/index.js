@@ -823,6 +823,26 @@ var Table = Node.create({
     console.log("[Table] Returning plugins:", plugins.length, "plugins");
     return plugins;
   },
+  onCreate() {
+    if (this.options.customScrollbar) {
+      console.log("[Table] onCreate: Forcing re-render of existing tables for customScrollbar");
+      setTimeout(() => {
+        const { tr } = this.editor.state;
+        let modified = false;
+        this.editor.state.doc.descendants((node, pos) => {
+          if (node.type.name === "table") {
+            console.log("[Table] Found existing table at position", pos, "- forcing re-render");
+            tr.replaceWith(pos, pos + node.nodeSize, node.copy(node.content));
+            modified = true;
+          }
+        });
+        if (modified) {
+          console.log("[Table] Dispatching transaction to re-render existing tables");
+          this.editor.view.dispatch(tr);
+        }
+      }, 100);
+    }
+  },
   extendNodeSchema(extension) {
     const context = {
       name: extension.name,
