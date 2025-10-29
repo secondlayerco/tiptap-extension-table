@@ -1,5 +1,5 @@
 {
-  "name": "@tiptap/extension-table",
+  "name": "tiptap-extension-table",
   "description": "table extension for tiptap",
   "version": "0.1.0-napkin",
   "homepage": "https://tiptap.dev",

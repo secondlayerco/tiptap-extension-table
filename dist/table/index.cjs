@@ -373,6 +373,7 @@ var Table = import_core2.Node.create({
     return [{ tag: "table" }];
   },
   renderHTML({ node, HTMLAttributes }) {
+    console.log("[ERWAN] renderHTML", node);
     const { colgroup, tableWidth, tableMinWidth } = createColGroup(node, this.options.cellMinWidth);
     const table = [
       "table",

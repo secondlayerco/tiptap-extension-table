@@ -269,6 +269,7 @@ export const Table = Node.create<TableOptions>({
   },
 
   renderHTML({ node, HTMLAttributes }) {
+    console.log('[ERWAN] renderHTML', node)
     const { colgroup, tableWidth, tableMinWidth } = createColGroup(node, this.options.cellMinWidth)
 
     const table: DOMOutputSpec = [
