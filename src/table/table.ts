@@ -474,16 +474,18 @@ export const Table = Node.create<TableOptions>({
   },
 
   addNodeView() {
-    // This handles ALL tables - both resizable and non-resizable
-    // The customScrollbar value is captured in the closure
     const customScrollbar = this.options.customScrollbar
     const cellMinWidth = this.options.cellMinWidth
+    const isResizable = this.options.resizable && this.editor.isEditable
 
-    console.log('[Table] addNodeView called, customScrollbar:', customScrollbar, 'cellMinWidth:', cellMinWidth)
+    console.log('[Table] addNodeView called, isResizable:', isResizable, 'customScrollbar:', customScrollbar)
 
     return ({ node, view, getPos }: { node: ProseMirrorNode; view: EditorView; getPos: boolean | (() => number | undefined) }) => {
       const getPosFunc = typeof getPos === 'function' ? getPos : undefined
-      console.log('[Table] Creating TableView with customScrollbar:', customScrollbar)
+      
+      // Note: When resizable=true, columnResizing plugin's View parameter takes precedence
+      // This will only be called for non-resizable tables
+      console.log('[Table] Creating TableView from addNodeView with customScrollbar:', customScrollbar)
       return new TableView(node, cellMinWidth, view, getPosFunc, customScrollbar)
     }
   },
