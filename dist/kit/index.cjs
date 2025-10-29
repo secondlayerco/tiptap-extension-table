@@ -191,6 +191,7 @@ var TableView = class {
     this.dragStartX = 0;
     this.dragStartScrollLeft = 0;
     this.rafId = null;
+    console.log("[TableView] Constructor called with customScrollbar:", customScrollbar);
     this.node = node;
     this.cellMinWidth = cellMinWidth || 25;
     this.view = view;
@@ -199,8 +200,10 @@ var TableView = class {
     this.dom = document.createElement("div");
     this.dom.className = "tableWrapper";
     if (this.customScrollbar) {
+      console.log("[TableView] Setting up custom scrollbar");
       this.setupCustomScrollbar();
     } else {
+      console.log("[TableView] Using native scrollbar");
       this.table = this.dom.appendChild(document.createElement("table"));
       this.colgroup = this.table.appendChild(document.createElement("colgroup"));
       updateColumns(node, this.colgroup, this.table, this.cellMinWidth);
@@ -212,6 +215,7 @@ var TableView = class {
    * Sets up the custom scrollbar structure and event handlers
    */
   setupCustomScrollbar() {
+    console.log("[TableView] setupCustomScrollbar called");
     this.scrollContainer = document.createElement("div");
     this.scrollContainer.className = "tableScrollContainer";
     this.scrollContainer.style.cssText = `
@@ -875,8 +879,10 @@ var Table = import_core5.Node.create({
   addNodeView() {
     const customScrollbar = this.options.customScrollbar;
     const cellMinWidth = this.options.cellMinWidth;
+    console.log("[Table] addNodeView called, customScrollbar:", customScrollbar);
     return ({ node, view, getPos }) => {
       const getPosFunc = typeof getPos === "function" ? getPos : void 0;
+      console.log("[Table] Creating TableView with customScrollbar:", customScrollbar);
       return new TableView(node, cellMinWidth, view, getPosFunc, customScrollbar);
     };
   },

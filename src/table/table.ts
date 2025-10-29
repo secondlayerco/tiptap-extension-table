@@ -472,8 +472,11 @@ export const Table = Node.create<TableOptions>({
     const customScrollbar = this.options.customScrollbar
     const cellMinWidth = this.options.cellMinWidth
 
+    console.log('[Table] addNodeView called, customScrollbar:', customScrollbar)
+
     return ({ node, view, getPos }: { node: ProseMirrorNode; view: EditorView; getPos: boolean | (() => number | undefined) }) => {
       const getPosFunc = typeof getPos === 'function' ? getPos : undefined
+      console.log('[Table] Creating TableView with customScrollbar:', customScrollbar)
       return new TableView(node, cellMinWidth, view, getPosFunc, customScrollbar)
     }
   },
