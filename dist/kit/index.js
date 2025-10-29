@@ -931,39 +931,34 @@ var Table = Node4.create({
   },
   onCreate() {
     if (this.options.customScrollbar) {
-      console.log("[Table] onCreate: Forcing re-render of existing tables for customScrollbar");
-      setTimeout(() => {
-        try {
-          console.log("[Table] setTimeout callback executing");
-          const { state, view } = this.editor;
-          console.log("[Table] Scanning document for tables...");
-          const tablePositions = [];
-          state.doc.descendants((node, pos) => {
-            if (node.type.name === "table") {
-              console.log("[Table] Found existing table at position", pos);
-              tablePositions.push(pos);
-            }
-          });
-          console.log("[Table] Found", tablePositions.length, "table(s)");
-          if (tablePositions.length > 0) {
-            console.log("[Table] Forcing re-render by triggering view update");
-            let tr = state.tr;
-            for (let i = tablePositions.length - 1; i >= 0; i--) {
-              const pos = tablePositions[i];
-              const node = state.doc.nodeAt(pos);
-              if (node && node.type.name === "table") {
-                console.log("[Table] Replacing table at position", pos);
-                tr = tr.replaceWith(pos, pos + node.nodeSize, node.copy(node.content));
-              }
-            }
-            console.log("[Table] Dispatching transaction");
-            view.dispatch(tr);
-            console.log("[Table] Transaction dispatched successfully");
-          }
-        } catch (error) {
-          console.error("[Table] Error in onCreate:", error);
+      this.storage.customScrollbarProcessed = false;
+    }
+  },
+  onUpdate() {
+    if (this.options.customScrollbar && !this.storage.customScrollbarProcessed) {
+      const { state, view } = this.editor;
+      const tablePositions = [];
+      state.doc.descendants((node, pos) => {
+        if (node.type.name === "table") {
+          tablePositions.push(pos);
         }
-      }, 100);
+      });
+      if (tablePositions.length > 0) {
+        console.log("[Table] onUpdate: Found", tablePositions.length, "table(s) - forcing re-render for custom scrollbar");
+        this.storage.customScrollbarProcessed = true;
+        let tr = state.tr;
+        for (let i = tablePositions.length - 1; i >= 0; i--) {
+          const pos = tablePositions[i];
+          const node = state.doc.nodeAt(pos);
+          if (node && node.type.name === "table") {
+            tr = tr.replaceWith(pos, pos + node.nodeSize, node.copy(node.content));
+          }
+        }
+        if (tr.docChanged) {
+          console.log("[Table] Dispatching transaction to re-render tables");
+          view.dispatch(tr);
+        }
+      }
     }
   },
   extendNodeSchema(extension) {
