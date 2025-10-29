@@ -914,16 +914,22 @@ var Table = import_core5.Node.create({
         super(node, cellMinWidth, view, getPos, customScrollbar);
       }
     };
+    console.log("[Table] Created TableViewWithOptions class:", TableViewWithOptions);
+    console.log("[Table] TableViewWithOptions.prototype:", TableViewWithOptions.prototype);
+    console.log("[Table] TableViewWithOptions.name:", TableViewWithOptions.name);
+    const columnResizingPlugin = isResizable ? (0, import_tables2.columnResizing)({
+      handleWidth: this.options.handleWidth,
+      cellMinWidth: this.options.cellMinWidth,
+      defaultCellMinWidth: this.options.cellMinWidth,
+      View: TableViewWithOptions,
+      lastColumnResizable: this.options.lastColumnResizable
+    }) : null;
+    if (columnResizingPlugin) {
+      console.log("[Table] columnResizing plugin created:", columnResizingPlugin);
+      console.log("[Table] columnResizing plugin spec:", columnResizingPlugin.spec);
+    }
     const plugins = [
-      ...isResizable ? [
-        (0, import_tables2.columnResizing)({
-          handleWidth: this.options.handleWidth,
-          cellMinWidth: this.options.cellMinWidth,
-          defaultCellMinWidth: this.options.cellMinWidth,
-          View: TableViewWithOptions,
-          lastColumnResizable: this.options.lastColumnResizable
-        })
-      ] : [],
+      ...isResizable && columnResizingPlugin ? [columnResizingPlugin] : [],
       (0, import_tables2.tableEditing)({
         allowTableNodeSelection: this.options.allowTableNodeSelection
       })
