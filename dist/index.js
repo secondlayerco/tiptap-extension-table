@@ -257,20 +257,18 @@ var TableView = class {
         const cell = row.child(i);
         const { colspan } = cell.attrs;
         console.log(`[TableView] Processing cell ${i}, colspan: ${colspan}, cellPos: ${cellPos}`);
-        if (!cell.attrs.colwidth) {
-          const cellWidths = [];
-          for (let j = 0; j < colspan; j += 1) {
-            if (colIndex + j < colWidths.length) {
-              cellWidths.push(colWidths[colIndex + j]);
-            }
+        const cellWidths = [];
+        for (let j = 0; j < colspan; j += 1) {
+          if (colIndex + j < colWidths.length) {
+            cellWidths.push(colWidths[colIndex + j]);
           }
-          console.log(`[TableView] Cell ${i} will get widths:`, cellWidths);
-          if (cellWidths.length > 0) {
-            tr.setNodeMarkup(cellPos, void 0, {
-              ...cell.attrs,
-              colwidth: cellWidths
-            });
-          }
+        }
+        console.log(`[TableView] Cell ${i} will get widths:`, cellWidths);
+        if (cellWidths.length > 0) {
+          tr.setNodeMarkup(cellPos, void 0, {
+            ...cell.attrs,
+            colwidth: cellWidths
+          });
         }
         colIndex += colspan;
         cellPos += cell.nodeSize;
@@ -279,6 +277,17 @@ var TableView = class {
       if (tr.docChanged) {
         console.log("[TableView] Dispatching transaction");
         this.view.dispatch(tr);
+        requestAnimationFrame(() => {
+          if (!this.view) return;
+          console.log("[TableView] Forcing colgroup update after transaction");
+          const updatedNode = this.view.state.doc.nodeAt(pos);
+          if (updatedNode) {
+            console.log("[TableView] Updating columns with new node");
+            this.node = updatedNode;
+            updateColumns(updatedNode, this.colgroup, this.table, this.cellMinWidth);
+            console.log("[TableView] Colgroup columns updated");
+          }
+        });
       } else {
         console.log("[TableView] No changes to dispatch");
       }

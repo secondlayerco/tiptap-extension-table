@@ -182,23 +182,21 @@ export class TableView implements NodeView {
 
         console.log(`[TableView] Processing cell ${i}, colspan: ${colspan}, cellPos: ${cellPos}`)
 
-        // Only update if the cell doesn't already have colwidth
-        if (!cell.attrs.colwidth) {
-          const cellWidths: number[] = []
-          for (let j = 0; j < colspan; j += 1) {
-            if (colIndex + j < colWidths.length) {
-              cellWidths.push(colWidths[colIndex + j])
-            }
+        // Update ALL cells with actual widths when we detect the table needs adjustment
+        const cellWidths: number[] = []
+        for (let j = 0; j < colspan; j += 1) {
+          if (colIndex + j < colWidths.length) {
+            cellWidths.push(colWidths[colIndex + j])
           }
+        }
 
-          console.log(`[TableView] Cell ${i} will get widths:`, cellWidths)
+        console.log(`[TableView] Cell ${i} will get widths:`, cellWidths)
 
-          if (cellWidths.length > 0) {
-            tr.setNodeMarkup(cellPos, undefined, {
-              ...cell.attrs,
-              colwidth: cellWidths,
-            })
-          }
+        if (cellWidths.length > 0) {
+          tr.setNodeMarkup(cellPos, undefined, {
+            ...cell.attrs,
+            colwidth: cellWidths,
+          })
         }
 
         colIndex += colspan
@@ -210,6 +208,22 @@ export class TableView implements NodeView {
       if (tr.docChanged) {
         console.log('[TableView] Dispatching transaction')
         this.view.dispatch(tr)
+        
+        // Force update the colgroup immediately after transaction
+        // The transaction will update the node, but we need to force updateColumns to reflect changes in DOM
+        requestAnimationFrame(() => {
+          if (!this.view) return
+          
+          console.log('[TableView] Forcing colgroup update after transaction')
+          // Get the updated node from the document
+          const updatedNode = this.view.state.doc.nodeAt(pos)
+          if (updatedNode) {
+            console.log('[TableView] Updating columns with new node')
+            this.node = updatedNode
+            updateColumns(updatedNode, this.colgroup, this.table, this.cellMinWidth)
+            console.log('[TableView] Colgroup columns updated')
+          }
+        })
       } else {
         console.log('[TableView] No changes to dispatch')
       }
