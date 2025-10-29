@@ -209,17 +209,17 @@ function updateColumns(node, colgroup, table, cellMinWidth, overrideCol, overrid
   }
 }
 var TableView = class {
-  constructor(node, cellMinWidth, view, getPos) {
-    console.log("[ERWAN] TableView", node);
+  constructor(node, cellMinWidth = 25, view, getPos) {
+    console.log("[TableView] constructor called with cellMinWidth:", cellMinWidth, "view:", !!view, "getPos:", !!getPos);
     this.node = node;
-    this.cellMinWidth = cellMinWidth;
+    this.cellMinWidth = cellMinWidth || 25;
     this.view = view;
     this.getPos = getPos;
     this.dom = document.createElement("div");
     this.dom.className = "tableWrapper";
     this.table = this.dom.appendChild(document.createElement("table"));
     this.colgroup = this.table.appendChild(document.createElement("colgroup"));
-    updateColumns(node, this.colgroup, this.table, cellMinWidth);
+    updateColumns(node, this.colgroup, this.table, this.cellMinWidth);
     this.contentDOM = this.table.appendChild(document.createElement("tbody"));
     this.captureColumnWidths();
   }
@@ -339,6 +339,7 @@ var TableView = class {
     if (node.type !== this.node.type) {
       return false;
     }
+    console.log("[TableView] update() called, this.cellMinWidth:", this.cellMinWidth);
     this.node = node;
     updateColumns(node, this.colgroup, this.table, this.cellMinWidth);
     return true;

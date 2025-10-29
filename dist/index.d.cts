@@ -304,7 +304,7 @@ declare class TableView implements NodeView {
     contentDOM: HTMLTableSectionElement;
     view?: EditorView;
     getPos?: () => number | undefined;
-    constructor(node: Node$1, cellMinWidth: number, view?: EditorView, getPos?: () => number | undefined);
+    constructor(node: Node$1, cellMinWidth?: number, view?: EditorView, getPos?: () => number | undefined);
     /**
      * Captures the actual rendered column widths from the browser and updates the node
      * attributes if columns don't already have explicit widths set.
