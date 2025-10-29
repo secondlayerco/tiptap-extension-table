@@ -1,7 +1,7 @@
 {
-  "name": "@tiptap/extension-table",
+  "name": "tiptap-extension-table",
   "description": "table extension for tiptap",
-  "version": "3.8.0",
+  "version": "0.1.0-napkin",
   "homepage": "https://tiptap.dev",
   "keywords": [
     "tiptap",
@@ -71,12 +71,14 @@
     "dist"
   ],
   "devDependencies": {
-    "@tiptap/core": "workspace:^",
-    "@tiptap/pm": "workspace:^"
+    "@tiptap/core": "3.7.0",
+    "@tiptap/pm": "3.7.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3"
   },
   "peerDependencies": {
-    "@tiptap/core": "workspace:^",
-    "@tiptap/pm": "workspace:^"
+    "@tiptap/core": "3.7.0",
+    "@tiptap/pm": "3.7.0"
   },
   "repository": {
     "type": "git",

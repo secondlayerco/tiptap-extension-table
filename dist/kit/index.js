@@ -22,12 +22,11 @@ var TableCell = Node.create({
       colwidth: {
         default: null,
         parseHTML: (element) => {
-          var _a, _b;
           const colwidth = element.getAttribute("colwidth");
           const value = colwidth ? colwidth.split(",").map((width) => parseInt(width, 10)) : null;
           if (!value) {
-            const cols = (_a = element.closest("table")) == null ? void 0 : _a.querySelectorAll("colgroup > col");
-            const cellIndex = Array.from(((_b = element.parentElement) == null ? void 0 : _b.children) || []).indexOf(element);
+            const cols = element.closest("table")?.querySelectorAll("colgroup > col");
+            const cellIndex = Array.from(element.parentElement?.children || []).indexOf(element);
             if (cellIndex && cellIndex > -1 && cols && cols[cellIndex]) {
               const colWidth = cols[cellIndex].getAttribute("width");
               return colWidth ? [parseInt(colWidth, 10)] : null;
@@ -143,7 +142,6 @@ function getColStyleDeclaration(minWidth, width) {
 
 // src/table/TableView.ts
 function updateColumns(node, colgroup, table, cellMinWidth, overrideCol, overrideValue) {
-  var _a;
   let totalWidth = 0;
   let fixedWidth = true;
   let nextDOM = colgroup.firstChild;
@@ -175,7 +173,7 @@ function updateColumns(node, colgroup, table, cellMinWidth, overrideCol, overrid
   }
   while (nextDOM) {
     const after = nextDOM.nextSibling;
-    (_a = nextDOM.parentNode) == null ? void 0 : _a.removeChild(nextDOM);
+    nextDOM.parentNode?.removeChild(nextDOM);
     nextDOM = after;
   }
   if (fixedWidth) {
@@ -187,82 +185,102 @@ function updateColumns(node, colgroup, table, cellMinWidth, overrideCol, overrid
   }
 }
 var TableView = class {
-  constructor(node, cellMinWidth, view, getPos) {
-    this.hasSetInitialWidths = false;
+  constructor(node, cellMinWidth = 25, view, getPos) {
     this.node = node;
-    this.cellMinWidth = cellMinWidth;
+    this.cellMinWidth = cellMinWidth || 25;
     this.view = view;
     this.getPos = getPos;
     this.dom = document.createElement("div");
     this.dom.className = "tableWrapper";
     this.table = this.dom.appendChild(document.createElement("table"));
     this.colgroup = this.table.appendChild(document.createElement("colgroup"));
-    updateColumns(node, this.colgroup, this.table, cellMinWidth);
+    updateColumns(node, this.colgroup, this.table, this.cellMinWidth);
     this.contentDOM = this.table.appendChild(document.createElement("tbody"));
-    const needsInitialWidths = this.checkIfNeedsInitialWidths();
-    if (needsInitialWidths) {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          this.captureAndSetInitialWidths();
-        });
+    this.captureColumnWidths();
+  }
+  /**
+   * Captures the actual rendered column widths from the browser and updates the node
+   * attributes. Uses a temporary removal of width constraints to let the browser
+   * calculate natural widths, then captures and persists those widths.
+   */
+  captureColumnWidths() {
+    if (!this.view || !this.getPos) {
+      return;
+    }
+    requestAnimationFrame(() => {
+      if (!this.view || !this.getPos) {
+        return;
+      }
+      const pos = this.getPos();
+      if (pos === void 0) {
+        return;
+      }
+      const cols = this.colgroup.querySelectorAll("col");
+      cols.forEach((col) => {
+        ;
+        col.style.width = "";
+        col.style.minWidth = "";
       });
-    }
-  }
-  checkIfNeedsInitialWidths() {
-    const row = this.node.firstChild;
-    if (!row)
-      return false;
-    for (let i = 0; i < row.childCount; i += 1) {
-      const cell = row.child(i);
-      if (cell.attrs.colwidth && cell.attrs.colwidth.some((w) => w !== null && w !== void 0)) {
-        return false;
-      }
-    }
-    return true;
-  }
-  captureAndSetInitialWidths() {
-    if (this.hasSetInitialWidths)
-      return;
-    const pos = this.getPos();
-    if (pos === void 0)
-      return;
-    const row = this.node.firstChild;
-    if (!row)
-      return;
-    const cols = Array.from(this.colgroup.querySelectorAll("col"));
-    if (cols.length === 0)
-      return;
-    const { state, dispatch } = this.view;
-    const tr = state.tr;
-    let colIndex = 0;
-    let modified = false;
-    let cellPos = pos + 2;
-    for (let cellIndex = 0; cellIndex < row.childCount; cellIndex += 1) {
-      const cell = row.child(cellIndex);
-      const { colspan } = cell.attrs;
-      const colwidths = [];
-      for (let j = 0; j < colspan; j += 1) {
-        const col = cols[colIndex + j];
-        if (col) {
-          const computedWidth = col.getBoundingClientRect().width;
-          const width = Math.max(Math.round(computedWidth), this.cellMinWidth);
-          colwidths.push(width);
+      requestAnimationFrame(() => {
+        if (!this.view || !this.getPos) {
+          return;
         }
-      }
-      if (colwidths.length > 0 && colwidths.some((w) => w > 0)) {
-        tr.setNodeMarkup(cellPos, void 0, {
-          ...cell.attrs,
-          colwidth: colwidths
+        const currentPos = this.getPos();
+        if (currentPos === void 0) {
+          return;
+        }
+        const colWidths = [];
+        cols.forEach((col) => {
+          colWidths.push(col.offsetWidth);
         });
-        modified = true;
-      }
-      colIndex += colspan;
-      cellPos += cell.nodeSize;
-    }
-    if (modified) {
-      dispatch(tr);
-      this.hasSetInitialWidths = true;
-    }
+        if (colWidths.length === 0) {
+          return;
+        }
+        const currentNode = this.view.state.doc.nodeAt(currentPos);
+        if (!currentNode || !currentNode.firstChild) {
+          return;
+        }
+        const newRows = [];
+        currentNode.forEach((tableRow) => {
+          const newCells = [];
+          let colIndex = 0;
+          tableRow.forEach((cell) => {
+            const { colspan } = cell.attrs;
+            const cellWidths = [];
+            for (let j = 0; j < colspan; j += 1) {
+              if (colIndex + j < colWidths.length) {
+                cellWidths.push(colWidths[colIndex + j]);
+              }
+            }
+            const newAttrs = { ...cell.attrs, colwidth: cellWidths.length > 0 ? cellWidths : cell.attrs.colwidth };
+            const newCell = cell.type.create(newAttrs, cell.content, cell.marks);
+            newCells.push(newCell);
+            colIndex += colspan;
+          });
+          const newRow = tableRow.type.create(tableRow.attrs, newCells, tableRow.marks);
+          newRows.push(newRow);
+        });
+        const newTable = currentNode.type.create(currentNode.attrs, newRows, currentNode.marks);
+        const tr = this.view.state.tr.replaceWith(currentPos, currentPos + currentNode.nodeSize, newTable);
+        if (tr.docChanged) {
+          this.view.dispatch(tr);
+          setTimeout(() => {
+            if (!this.view || !this.getPos) {
+              return;
+            }
+            const finalPos = this.getPos();
+            if (finalPos === void 0) {
+              return;
+            }
+            const finalNode = this.view.state.doc.nodeAt(finalPos);
+            if (finalNode) {
+              this.node = finalNode;
+              updateColumns(finalNode, this.colgroup, this.table, this.cellMinWidth);
+            }
+          }, 100);
+        }
+      });
+    });
   }
   update(node) {
     if (node.type !== this.node.type) {
@@ -379,7 +397,7 @@ var deleteTableWhenAllCellsSelected = ({ editor }) => {
   const table = findParentNodeClosestToPos(selection.ranges[0].$from, (node) => {
     return node.type.name === "table";
   });
-  table == null ? void 0 : table.node.descendants((node) => {
+  table?.node.descendants((node) => {
     if (node.type.name === "table") {
       return false;
     }
@@ -401,8 +419,7 @@ function collapseWhitespace(s) {
   return (s || "").replace(/\s+/g, " ").trim();
 }
 function renderTableToMarkdown(node, h, options = {}) {
-  var _a;
-  const cellSep = (_a = options.cellLineSeparator) != null ? _a : DEFAULT_CELL_LINE_SEPARATOR;
+  const cellSep = options.cellLineSeparator ?? DEFAULT_CELL_LINE_SEPARATOR;
   if (!node || !node.content || node.content.length === 0) {
     return "";
   }
@@ -431,9 +448,8 @@ function renderTableToMarkdown(node, h, options = {}) {
   }
   const colWidths = new Array(columnCount).fill(0);
   rows.forEach((r) => {
-    var _a2;
     for (let i = 0; i < columnCount; i += 1) {
-      const cell = ((_a2 = r[i]) == null ? void 0 : _a2.text) || "";
+      const cell = r[i]?.text || "";
       const len = cell.length;
       if (len > colWidths[i]) {
         colWidths[i] = len;
@@ -464,12 +480,14 @@ var markdown_default = renderTableToMarkdown;
 // src/table/table.ts
 var Table = Node4.create({
   name: "table",
+  // @ts-ignore
   addOptions() {
     return {
       HTMLAttributes: {},
       resizable: false,
       handleWidth: 5,
       cellMinWidth: 25,
+      // TODO: fix
       View: TableView,
       lastColumnResizable: true,
       allowTableNodeSelection: false
@@ -618,6 +636,7 @@ var Table = Node4.create({
         columnResizing({
           handleWidth: this.options.handleWidth,
           cellMinWidth: this.options.cellMinWidth,
+          defaultCellMinWidth: this.options.cellMinWidth,
           View: this.options.View,
           lastColumnResizable: this.options.lastColumnResizable
         })

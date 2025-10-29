@@ -19,12 +19,11 @@ var TableCell = Node.create({
       colwidth: {
         default: null,
         parseHTML: (element) => {
-          var _a, _b;
           const colwidth = element.getAttribute("colwidth");
           const value = colwidth ? colwidth.split(",").map((width) => parseInt(width, 10)) : null;
           if (!value) {
-            const cols = (_a = element.closest("table")) == null ? void 0 : _a.querySelectorAll("colgroup > col");
-            const cellIndex = Array.from(((_b = element.parentElement) == null ? void 0 : _b.children) || []).indexOf(element);
+            const cols = element.closest("table")?.querySelectorAll("colgroup > col");
+            const cellIndex = Array.from(element.parentElement?.children || []).indexOf(element);
             if (cellIndex && cellIndex > -1 && cols && cols[cellIndex]) {
               const colWidth = cols[cellIndex].getAttribute("width");
               return colWidth ? [parseInt(colWidth, 10)] : null;
