@@ -307,7 +307,8 @@ declare class TableView implements NodeView {
     constructor(node: Node$1, cellMinWidth?: number, view?: EditorView, getPos?: () => number | undefined);
     /**
      * Captures the actual rendered column widths from the browser and updates the node
-     * attributes if columns don't already have explicit widths set.
+     * attributes. First clears any existing colwidth attributes to let the browser
+     * calculate natural widths, then captures and persists those widths.
      */
     private captureColumnWidths;
     update(node: Node$1): boolean;
