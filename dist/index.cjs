@@ -276,28 +276,31 @@ var TableView = class {
           return;
         }
         const row = currentNode.firstChild;
-        const tr = this.view.state.tr;
-        let colIndex = 0;
-        let cellPos = currentPos + 2;
-        console.log("[TableView] Building transaction to set widths");
-        for (let i = 0; i < row.childCount; i += 1) {
-          const cell = row.child(i);
-          const { colspan } = cell.attrs;
-          const cellWidths = [];
-          for (let j = 0; j < colspan; j += 1) {
-            if (colIndex + j < colWidths.length) {
-              cellWidths.push(colWidths[colIndex + j]);
+        console.log("[TableView] Building new table structure with captured widths");
+        const newRows = [];
+        currentNode.forEach((tableRow, rowOffset, rowIndex) => {
+          const newCells = [];
+          let colIndex = 0;
+          tableRow.forEach((cell, cellOffset, cellIndex) => {
+            const { colspan } = cell.attrs;
+            const cellWidths = [];
+            for (let j = 0; j < colspan; j += 1) {
+              if (colIndex + j < colWidths.length) {
+                cellWidths.push(colWidths[colIndex + j]);
+              }
             }
-          }
-          console.log(`[TableView] Cell ${i} at pos ${cellPos} will get widths:`, cellWidths);
-          if (cellWidths.length > 0) {
-            const newAttrs = { ...cell.attrs, colwidth: cellWidths };
-            console.log(`[TableView] Setting attrs for cell ${i}:`, newAttrs);
-            tr.setNodeMarkup(cellPos, void 0, newAttrs);
-          }
-          colIndex += colspan;
-          cellPos += cell.nodeSize;
-        }
+            console.log(`[TableView] Row ${rowIndex} Cell ${cellIndex} (colspan ${colspan}) will get widths:`, cellWidths);
+            const newAttrs = { ...cell.attrs, colwidth: cellWidths.length > 0 ? cellWidths : cell.attrs.colwidth };
+            const newCell = cell.type.create(newAttrs, cell.content, cell.marks);
+            newCells.push(newCell);
+            colIndex += colspan;
+          });
+          const newRow = tableRow.type.create(tableRow.attrs, newCells, tableRow.marks);
+          newRows.push(newRow);
+        });
+        const newTable = currentNode.type.create(currentNode.attrs, newRows, currentNode.marks);
+        console.log("[TableView] Replacing table node");
+        const tr = this.view.state.tr.replaceWith(currentPos, currentPos + currentNode.nodeSize, newTable);
         console.log("[TableView] Transaction has", tr.steps.length, "steps, docChanged:", tr.docChanged);
         if (tr.docChanged) {
           console.log("[TableView] Dispatching transaction");
