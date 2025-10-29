@@ -490,8 +490,19 @@ export const Table = Node.create<TableOptions>({
 
   addProseMirrorPlugins() {
     const isResizable = this.options.resizable && this.editor.isEditable
+    const customScrollbar = this.options.customScrollbar
+    const cellMinWidth = this.options.cellMinWidth
 
-    console.log('[Table] addProseMirrorPlugins called, isResizable:', isResizable)
+    console.log('[Table] addProseMirrorPlugins called, isResizable:', isResizable, 'customScrollbar:', customScrollbar)
+
+    // Create a View class that captures customScrollbar in its constructor
+    // This is needed because columnResizing plugin requires its own View
+    const TableViewWithOptions = class extends TableView {
+      constructor(node: ProseMirrorNode, _cellMinWidth: number, view: EditorView, getPos?: () => number | undefined) {
+        console.log('[TableViewWithOptions] Constructor called, will pass customScrollbar:', customScrollbar)
+        super(node, cellMinWidth, view, getPos, customScrollbar)
+      }
+    }
 
     const plugins = [
       ...(isResizable
@@ -500,7 +511,7 @@ export const Table = Node.create<TableOptions>({
               handleWidth: this.options.handleWidth,
               cellMinWidth: this.options.cellMinWidth,
               defaultCellMinWidth: this.options.cellMinWidth,
-              // Don't pass View parameter - let addNodeView() handle all view creation
+              View: TableViewWithOptions,
               lastColumnResizable: this.options.lastColumnResizable,
             }),
           ]

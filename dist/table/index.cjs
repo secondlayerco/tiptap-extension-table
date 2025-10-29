@@ -792,14 +792,22 @@ var Table = import_core2.Node.create({
   },
   addProseMirrorPlugins() {
     const isResizable = this.options.resizable && this.editor.isEditable;
-    console.log("[Table] addProseMirrorPlugins called, isResizable:", isResizable);
+    const customScrollbar = this.options.customScrollbar;
+    const cellMinWidth = this.options.cellMinWidth;
+    console.log("[Table] addProseMirrorPlugins called, isResizable:", isResizable, "customScrollbar:", customScrollbar);
+    const TableViewWithOptions = class extends TableView {
+      constructor(node, _cellMinWidth, view, getPos) {
+        console.log("[TableViewWithOptions] Constructor called, will pass customScrollbar:", customScrollbar);
+        super(node, cellMinWidth, view, getPos, customScrollbar);
+      }
+    };
     const plugins = [
       ...isResizable ? [
         (0, import_tables2.columnResizing)({
           handleWidth: this.options.handleWidth,
           cellMinWidth: this.options.cellMinWidth,
           defaultCellMinWidth: this.options.cellMinWidth,
-          // Don't pass View parameter - let addNodeView() handle all view creation
+          View: TableViewWithOptions,
           lastColumnResizable: this.options.lastColumnResizable
         })
       ] : [],
