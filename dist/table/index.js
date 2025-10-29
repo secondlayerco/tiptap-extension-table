@@ -765,6 +765,14 @@ var Table = Node.create({
       "Mod-Delete": deleteTableWhenAllCellsSelected
     };
   },
+  addNodeView() {
+    const customScrollbar = this.options.customScrollbar;
+    const cellMinWidth = this.options.cellMinWidth;
+    return ({ node, view, getPos }) => {
+      const getPosFunc = typeof getPos === "function" ? getPos : void 0;
+      return new TableView(node, cellMinWidth, view, getPosFunc, customScrollbar);
+    };
+  },
   addProseMirrorPlugins() {
     const isResizable = this.options.resizable && this.editor.isEditable;
     const customScrollbar = this.options.customScrollbar;
