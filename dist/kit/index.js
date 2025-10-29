@@ -142,29 +142,40 @@ function getColStyleDeclaration(minWidth, width) {
 
 // src/table/TableView.ts
 function updateColumns(node, colgroup, table, cellMinWidth, overrideCol, overrideValue) {
+  console.log("[TableView] updateColumns called");
   let totalWidth = 0;
   let fixedWidth = true;
   let nextDOM = colgroup.firstChild;
   const row = node.firstChild;
   if (row !== null) {
+    console.log("[TableView] updateColumns - Row has", row.childCount, "cells");
     for (let i = 0, col = 0; i < row.childCount; i += 1) {
       const { colspan, colwidth } = row.child(i).attrs;
+      console.log(`[TableView] updateColumns - Cell ${i} colwidth:`, colwidth);
       for (let j = 0; j < colspan; j += 1, col += 1) {
         const hasWidth = overrideCol === col ? overrideValue : colwidth && colwidth[j];
         const cssWidth = hasWidth ? `${hasWidth}px` : "";
+        console.log(`[TableView] updateColumns - Col ${col}: hasWidth=${hasWidth}, cssWidth=${cssWidth}`);
         totalWidth += hasWidth || cellMinWidth;
         if (!hasWidth) {
           fixedWidth = false;
         }
         if (!nextDOM) {
+          console.log(`[TableView] updateColumns - Creating new col element for col ${col}`);
           const colElement = document.createElement("col");
           const [propertyKey, propertyValue] = getColStyleDeclaration(cellMinWidth, hasWidth);
+          console.log(`[TableView] updateColumns - Setting ${propertyKey}: ${propertyValue}`);
           colElement.style.setProperty(propertyKey, propertyValue);
           colgroup.appendChild(colElement);
         } else {
+          const currentWidth = nextDOM.style.width;
+          console.log(`[TableView] updateColumns - Col ${col} current width: "${currentWidth}", target: "${cssWidth}"`);
           if (nextDOM.style.width !== cssWidth) {
             const [propertyKey, propertyValue] = getColStyleDeclaration(cellMinWidth, hasWidth);
+            console.log(`[TableView] updateColumns - Updating col ${col} with ${propertyKey}: ${propertyValue}`);
             nextDOM.style.setProperty(propertyKey, propertyValue);
+          } else {
+            console.log(`[TableView] updateColumns - Col ${col} already has correct width, skipping`);
           }
           nextDOM = nextDOM.nextSibling;
         }
