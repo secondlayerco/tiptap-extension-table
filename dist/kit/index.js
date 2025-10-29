@@ -142,7 +142,7 @@ function getColStyleDeclaration(minWidth, width) {
 
 // src/table/TableView.ts
 function updateColumns(node, colgroup, table, cellMinWidth, overrideCol, overrideValue) {
-  console.log("[TableView] updateColumns called");
+  console.log("[TableView] updateColumns called with cellMinWidth:", cellMinWidth, "type:", typeof cellMinWidth);
   let totalWidth = 0;
   let fixedWidth = true;
   let nextDOM = colgroup.firstChild;

@@ -11,7 +11,7 @@ export function updateColumns(
   overrideCol?: number,
   overrideValue?: number,
 ) {
-  console.log('[TableView] updateColumns called')
+  console.log('[TableView] updateColumns called with cellMinWidth:', cellMinWidth, 'type:', typeof cellMinWidth)
   let totalWidth = 0
   let fixedWidth = true
   let nextDOM = colgroup.firstChild
