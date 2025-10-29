@@ -116,7 +116,7 @@ export class TableView implements NodeView {
 
   /**
    * Captures the actual rendered column widths from the browser and updates the node
-   * attributes. First clears any existing colwidth attributes to let the browser
+   * attributes. Uses a temporary removal of width constraints to let the browser
    * calculate natural widths, then captures and persists those widths.
    */
   private captureColumnWidths() {
@@ -127,169 +127,131 @@ export class TableView implements NodeView {
       return
     }
 
-    const pos = this.getPos()
-    console.log('[TableView] Table position:', pos)
-    
-    if (pos === undefined) {
-      console.log('[TableView] Position is undefined, exiting')
-      return
-    }
-
-    const row = this.node.firstChild
-    if (!row) {
-      console.log('[TableView] No first row found')
-      return
-    }
-
-    console.log('[TableView] First row has', row.childCount, 'cells')
-
-    // STEP 1: Clear all existing colwidth attributes to let browser decide
-    const { tr } = this.view.state
-    let cellPos = pos + 2 // First cell position
-
-    console.log('[TableView] STEP 1: Clearing all colwidth attributes')
-    for (let i = 0; i < row.childCount; i += 1) {
-      const cell = row.child(i)
-      const currentColwidth = cell.attrs.colwidth
-      
-      console.log(`[TableView] Cell ${i} current colwidth:`, currentColwidth)
-      
-      // Clear colwidth if it exists
-      if (currentColwidth) {
-        tr.setNodeMarkup(cellPos, undefined, {
-          ...cell.attrs,
-          colwidth: null,
-        })
-        console.log(`[TableView] Cleared colwidth for cell ${i}`)
-      }
-      
-      cellPos += cell.nodeSize
-    }
-
-    if (tr.docChanged) {
-      console.log('[TableView] Dispatching transaction to clear colwidths')
-      this.view.dispatch(tr)
-      console.log('[TableView] Colwidths cleared, waiting for browser layout')
-    }
-
-    // STEP 2: Wait for browser to re-layout, then capture widths
+    // Wait for initial render
     requestAnimationFrame(() => {
-      console.log('[TableView] STEP 2: Browser layout complete, capturing widths')
+      console.log('[TableView] Initial render complete')
       
       if (!this.view || !this.getPos) {
-        console.log('[TableView] View or getPos lost after clearing')
         return
       }
 
-      const currentPos = this.getPos()
-      if (currentPos === undefined) {
-        console.log('[TableView] Position undefined after clearing')
+      const pos = this.getPos()
+      if (pos === undefined) {
         return
       }
 
-      // Get the updated node after clearing
-      const updatedNode = this.view.state.doc.nodeAt(currentPos)
-      if (!updatedNode) {
-        console.log('[TableView] Could not get updated node')
-        return
-      }
-
-      const updatedRow = updatedNode.firstChild
-      if (!updatedRow) {
-        console.log('[TableView] No first row in updated node')
-        return
-      }
-
-      // Get the actual rendered column widths from DOM
+      // Temporarily remove all col widths to let browser calculate
       const cols = this.colgroup.querySelectorAll('col')
-      console.log('[TableView] Found', cols.length, 'col elements')
+      console.log('[TableView] Temporarily removing col constraints')
       
-      const colWidths: number[] = []
+      const originalStyles: string[] = []
       cols.forEach((col, idx) => {
-        const width = (col as HTMLElement).offsetWidth
-        console.log(`[TableView] Col ${idx} offsetWidth:`, width)
-        colWidths.push(width)
+        originalStyles[idx] = (col as HTMLElement).style.width
+        ;(col as HTMLElement).style.width = ''
+        ;(col as HTMLElement).style.minWidth = ''
       })
 
-      console.log('[TableView] Collected browser-calculated widths:', colWidths)
-
-      if (colWidths.length === 0) {
-        console.log('[TableView] No widths collected, exiting')
-        return
-      }
-
-      // STEP 3: Set the captured widths on all cells
-      const { tr: setTr } = this.view.state
-      let colIndex = 0
-      let setCellPos = currentPos + 2
-
-      console.log('[TableView] STEP 3: Setting captured widths on cells')
-
-      for (let i = 0; i < updatedRow.childCount; i += 1) {
-        const cell = updatedRow.child(i)
-        const { colspan } = cell.attrs
-
-        console.log(`[TableView] Setting widths for cell ${i}, colspan: ${colspan}, cellPos: ${setCellPos}`)
-
-        const cellWidths: number[] = []
-        for (let j = 0; j < colspan; j += 1) {
-          if (colIndex + j < colWidths.length) {
-            cellWidths.push(colWidths[colIndex + j])
-          }
-        }
-
-        console.log(`[TableView] Cell ${i} will get widths:`, cellWidths)
-
-        if (cellWidths.length > 0) {
-          setTr.setNodeMarkup(setCellPos, undefined, {
-            ...cell.attrs,
-            colwidth: cellWidths,
-          })
-        }
-
-        colIndex += colspan
-        setCellPos += cell.nodeSize
-      }
-
-      console.log('[TableView] Set transaction docChanged:', setTr.docChanged)
-      console.log('[TableView] Set transaction steps:', setTr.steps.length)
-
-      if (setTr.docChanged) {
-        console.log('[TableView] Dispatching transaction to set widths')
-        this.view.dispatch(setTr)
-        console.log('[TableView] Widths set, waiting for final update')
+      // Wait for browser to recalculate
+      requestAnimationFrame(() => {
+        console.log('[TableView] Browser recalculated, capturing widths')
         
-        // STEP 4: Force final colgroup update
-        setTimeout(() => {
-          if (!this.view || !this.getPos) {
-            console.log('[TableView] View or getPos lost after setting widths')
-            return
+        if (!this.view || !this.getPos) {
+          return
+        }
+
+        const currentPos = this.getPos()
+        if (currentPos === undefined) {
+          return
+        }
+
+        // Capture the browser-calculated widths
+        const colWidths: number[] = []
+        cols.forEach((col, idx) => {
+          const width = (col as HTMLElement).offsetWidth
+          console.log(`[TableView] Col ${idx} browser-calculated offsetWidth:`, width)
+          colWidths.push(width)
+        })
+
+        if (colWidths.length === 0) {
+          console.log('[TableView] No widths captured')
+          return
+        }
+
+        // Get the current node
+        const currentNode = this.view.state.doc.nodeAt(currentPos)
+        if (!currentNode || !currentNode.firstChild) {
+          console.log('[TableView] Could not get current node')
+          return
+        }
+
+        const row = currentNode.firstChild
+        
+        // Build a single transaction to update all cells at once
+        const tr = this.view.state.tr
+        let colIndex = 0
+        let cellPos = currentPos + 2 // First cell position
+
+        console.log('[TableView] Building transaction to set widths')
+        
+        for (let i = 0; i < row.childCount; i += 1) {
+          const cell = row.child(i)
+          const { colspan } = cell.attrs
+
+          const cellWidths: number[] = []
+          for (let j = 0; j < colspan; j += 1) {
+            if (colIndex + j < colWidths.length) {
+              cellWidths.push(colWidths[colIndex + j])
+            }
           }
-          
-          const finalPos = this.getPos()
-          if (finalPos === undefined) {
-            console.log('[TableView] Position undefined after setting widths')
-            return
+
+          console.log(`[TableView] Cell ${i} at pos ${cellPos} will get widths:`, cellWidths)
+
+          if (cellWidths.length > 0) {
+            const newAttrs = { ...cell.attrs, colwidth: cellWidths }
+            console.log(`[TableView] Setting attrs for cell ${i}:`, newAttrs)
+            tr.setNodeMarkup(cellPos, undefined, newAttrs)
           }
+
+          colIndex += colspan
+          cellPos += cell.nodeSize
+        }
+
+        console.log('[TableView] Transaction has', tr.steps.length, 'steps, docChanged:', tr.docChanged)
+
+        if (tr.docChanged) {
+          console.log('[TableView] Dispatching transaction')
+          this.view.dispatch(tr)
           
-          const finalNode = this.view.state.doc.nodeAt(finalPos)
-          if (finalNode) {
-            console.log('[TableView] STEP 4: Forcing final colgroup update')
-            console.log('[TableView] Final node first cell colwidth:', finalNode.firstChild?.child(0).attrs.colwidth)
-            this.node = finalNode
-            updateColumns(finalNode, this.colgroup, this.table, this.cellMinWidth)
-            console.log('[TableView] Final colgroup update complete')
+          // Force update after transaction
+          setTimeout(() => {
+            if (!this.view || !this.getPos) {
+              return
+            }
             
-            // Log final DOM state
-            const finalCols = this.colgroup.querySelectorAll('col')
-            finalCols.forEach((col, idx) => {
-              console.log(`[TableView] Final - Col ${idx} style.width:`, (col as HTMLElement).style.width)
-            })
-          }
-        }, 100)
-      } else {
-        console.log('[TableView] No width changes to dispatch')
-      }
+            const finalPos = this.getPos()
+            if (finalPos === undefined) {
+              return
+            }
+            
+            const finalNode = this.view.state.doc.nodeAt(finalPos)
+            if (finalNode) {
+              console.log('[TableView] Forcing colgroup update with final node')
+              console.log('[TableView] Final node cells:', finalNode.firstChild?.childCount)
+              finalNode.firstChild?.forEach((cell, idx) => {
+                console.log(`[TableView] Final cell ${idx} colwidth:`, cell.attrs.colwidth)
+              })
+              
+              this.node = finalNode
+              updateColumns(finalNode, this.colgroup, this.table, this.cellMinWidth)
+              
+              const finalCols = this.colgroup.querySelectorAll('col')
+              finalCols.forEach((col, idx) => {
+                console.log(`[TableView] Final col ${idx} style.width:`, (col as HTMLElement).style.width)
+              })
+            }
+          }, 100)
+        }
+      })
     })
   }
 
