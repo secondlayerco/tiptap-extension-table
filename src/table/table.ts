@@ -474,8 +474,7 @@ export const Table = Node.create<TableOptions>({
   },
 
   addNodeView() {
-    // This is the clean solution: always create TableView with customScrollbar option
-    // This works for both new and existing tables, and for both resizable and non-resizable tables
+    // This handles non-resizable tables
     const customScrollbar = this.options.customScrollbar
     const cellMinWidth = this.options.cellMinWidth
 
@@ -490,8 +489,18 @@ export const Table = Node.create<TableOptions>({
 
   addProseMirrorPlugins() {
     const isResizable = this.options.resizable && this.editor.isEditable
+    const customScrollbar = this.options.customScrollbar
+    const cellMinWidth = this.options.cellMinWidth
 
-    console.log('[Table] addProseMirrorPlugins called, isResizable:', isResizable)
+    console.log('[Table] addProseMirrorPlugins called, isResizable:', isResizable, 'customScrollbar:', customScrollbar)
+
+    // When resizable, columnResizing plugin needs a View that passes customScrollbar
+    const ViewForColumnResizing = class extends TableView {
+      constructor(node: ProseMirrorNode, _cellMinWidth: number, view: EditorView, getPos?: () => number | undefined) {
+        console.log('[ViewForColumnResizing] Constructor called with customScrollbar:', customScrollbar)
+        super(node, cellMinWidth, view, getPos, customScrollbar)
+      }
+    }
 
     const plugins = [
       ...(isResizable
@@ -500,8 +509,7 @@ export const Table = Node.create<TableOptions>({
               handleWidth: this.options.handleWidth,
               cellMinWidth: this.options.cellMinWidth,
               defaultCellMinWidth: this.options.cellMinWidth,
-              // Don't pass a custom View to columnResizing - let addNodeView handle it
-              View: TableView,
+              View: ViewForColumnResizing,
               lastColumnResizable: this.options.lastColumnResizable,
             }),
           ]
