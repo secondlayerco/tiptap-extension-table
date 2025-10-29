@@ -29,7 +29,7 @@ import {
   toggleHeader,
   toggleHeaderCell,
 } from '@tiptap/pm/tables'
-import type { EditorView, NodeView } from '@tiptap/pm/view'
+import type { EditorView, NodeView, ViewMutationRecord } from '@tiptap/pm/view'
 
 import { TableView } from './TableView.js'
 import { createColGroup } from './utilities/createColGroup.js'
@@ -90,6 +90,14 @@ export interface TableOptions {
    * @example true
    */
   allowTableNodeSelection: boolean
+
+  /**
+   * Use custom scrollbar instead of native browser scrollbar.
+   * Allows full CSS control over scrollbar appearance and consistent height across browsers/OS.
+   * @default false
+   * @example true
+   */
+  customScrollbar: boolean
 }
 
 declare module '@tiptap/core' {
@@ -253,6 +261,7 @@ export const Table = Node.create<TableOptions>({
       View: TableView,
       lastColumnResizable: true,
       allowTableNodeSelection: false,
+      customScrollbar: false,
     }
   },
 
@@ -461,6 +470,37 @@ export const Table = Node.create<TableOptions>({
 
   addProseMirrorPlugins() {
     const isResizable = this.options.resizable && this.editor.isEditable
+    const customScrollbar = this.options.customScrollbar
+
+    // Create a custom View wrapper that passes the customScrollbar option
+    const CustomView = this.options.View && customScrollbar
+      ? class CustomTableView implements NodeView {
+          private tableView: InstanceType<typeof TableView>
+
+          node: ProseMirrorNode
+          dom: HTMLDivElement
+          contentDOM: HTMLTableSectionElement
+
+          constructor(node: ProseMirrorNode, cellMinWidth: number, view: EditorView, getPos?: () => number | undefined) {
+            this.tableView = new TableView(node, cellMinWidth, view, getPos, customScrollbar)
+            this.node = this.tableView.node
+            this.dom = this.tableView.dom
+            this.contentDOM = this.tableView.contentDOM
+          }
+
+          update(node: ProseMirrorNode) {
+            return this.tableView.update(node)
+          }
+
+          ignoreMutation(mutation: ViewMutationRecord) {
+            return this.tableView.ignoreMutation(mutation)
+          }
+
+          destroy() {
+            this.tableView.destroy()
+          }
+        }
+      : this.options.View
 
     return [
       ...(isResizable
@@ -469,7 +509,7 @@ export const Table = Node.create<TableOptions>({
               handleWidth: this.options.handleWidth,
               cellMinWidth: this.options.cellMinWidth,
               defaultCellMinWidth: this.options.cellMinWidth,
-              View: this.options.View,
+              View: CustomView,
               lastColumnResizable: this.options.lastColumnResizable,
             }),
           ]

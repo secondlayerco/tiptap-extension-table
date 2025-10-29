@@ -198,18 +198,236 @@ function updateColumns(node, colgroup, table, cellMinWidth, overrideCol, overrid
   }
 }
 var TableView = class {
-  constructor(node, cellMinWidth = 25, view, getPos) {
+  constructor(node, cellMinWidth = 25, view, getPos, customScrollbar = false) {
+    this.isDragging = false;
+    this.dragStartX = 0;
+    this.dragStartScrollLeft = 0;
+    this.rafId = null;
     this.node = node;
     this.cellMinWidth = cellMinWidth || 25;
     this.view = view;
     this.getPos = getPos;
+    this.customScrollbar = customScrollbar;
     this.dom = document.createElement("div");
     this.dom.className = "tableWrapper";
-    this.table = this.dom.appendChild(document.createElement("table"));
-    this.colgroup = this.table.appendChild(document.createElement("colgroup"));
-    updateColumns(node, this.colgroup, this.table, this.cellMinWidth);
-    this.contentDOM = this.table.appendChild(document.createElement("tbody"));
+    if (this.customScrollbar) {
+      this.setupCustomScrollbar();
+    } else {
+      this.table = this.dom.appendChild(document.createElement("table"));
+      this.colgroup = this.table.appendChild(document.createElement("colgroup"));
+      updateColumns(node, this.colgroup, this.table, this.cellMinWidth);
+      this.contentDOM = this.table.appendChild(document.createElement("tbody"));
+    }
     this.captureColumnWidths();
+  }
+  /**
+   * Sets up the custom scrollbar structure and event handlers
+   */
+  setupCustomScrollbar() {
+    this.scrollContainer = document.createElement("div");
+    this.scrollContainer.className = "tableScrollContainer";
+    this.scrollContainer.style.cssText = `
+      overflow-x: hidden;
+      overflow-y: visible;
+      position: relative;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    `;
+    const style = document.createElement("style");
+    style.textContent = `
+      .tableScrollContainer::-webkit-scrollbar {
+        display: none;
+      }
+    `;
+    this.dom.appendChild(style);
+    this.table = this.scrollContainer.appendChild(document.createElement("table"));
+    this.colgroup = this.table.appendChild(document.createElement("colgroup"));
+    updateColumns(this.node, this.colgroup, this.table, this.cellMinWidth);
+    this.contentDOM = this.table.appendChild(document.createElement("tbody"));
+    this.dom.appendChild(this.scrollContainer);
+    this.scrollbarTrack = document.createElement("div");
+    this.scrollbarTrack.className = "customScrollbarTrack";
+    this.scrollbarTrack.style.cssText = `
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 12px;
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 6px;
+      cursor: pointer;
+      display: none;
+    `;
+    this.scrollbarThumb = document.createElement("div");
+    this.scrollbarThumb.className = "customScrollbarThumb";
+    this.scrollbarThumb.style.cssText = `
+      position: absolute;
+      top: 2px;
+      left: 0;
+      height: 8px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 4px;
+      cursor: grab;
+      transition: background 0.2s;
+    `;
+    this.scrollbarThumb.addEventListener("mouseenter", () => {
+      if (!this.isDragging && this.scrollbarThumb) {
+        this.scrollbarThumb.style.background = "rgba(0, 0, 0, 0.5)";
+      }
+    });
+    this.scrollbarThumb.addEventListener("mouseleave", () => {
+      if (!this.isDragging && this.scrollbarThumb) {
+        this.scrollbarThumb.style.background = "rgba(0, 0, 0, 0.3)";
+      }
+    });
+    this.scrollbarTrack.appendChild(this.scrollbarThumb);
+    this.dom.appendChild(this.scrollbarTrack);
+    this.setupScrollbarEvents();
+    this.setupObservers();
+    this.updateScrollbar();
+  }
+  /**
+   * Sets up all event handlers for custom scrollbar
+   */
+  setupScrollbarEvents() {
+    if (!this.scrollContainer || !this.scrollbarThumb || !this.scrollbarTrack) return;
+    const handleWheel = (e) => {
+      if (!this.scrollContainer) return;
+      if (this.table.scrollWidth <= this.scrollContainer.clientWidth) return;
+      e.preventDefault();
+      if (this.rafId !== null) return;
+      this.rafId = requestAnimationFrame(() => {
+        if (!this.scrollContainer) {
+          this.rafId = null;
+          return;
+        }
+        let delta = e.deltaX;
+        if (delta === 0 && e.shiftKey) {
+          delta = e.deltaY;
+        }
+        const newScrollLeft = Math.max(
+          0,
+          Math.min(
+            this.scrollContainer.scrollWidth - this.scrollContainer.clientWidth,
+            this.scrollContainer.scrollLeft + delta
+          )
+        );
+        this.scrollContainer.scrollLeft = newScrollLeft;
+        this.updateScrollbarPosition();
+        this.rafId = null;
+      });
+    };
+    this.scrollContainer.addEventListener("wheel", handleWheel, { passive: false });
+    const handleThumbMouseDown = (e) => {
+      if (!this.scrollContainer) return;
+      e.preventDefault();
+      this.isDragging = true;
+      this.dragStartX = e.clientX;
+      this.dragStartScrollLeft = this.scrollContainer.scrollLeft;
+      if (this.scrollbarThumb) {
+        this.scrollbarThumb.style.cursor = "grabbing";
+        this.scrollbarThumb.style.background = "rgba(0, 0, 0, 0.5)";
+      }
+      document.addEventListener("mousemove", handleDocumentMouseMove);
+      document.addEventListener("mouseup", handleDocumentMouseUp);
+    };
+    const handleDocumentMouseMove = (e) => {
+      if (!this.isDragging || !this.scrollContainer || !this.scrollbarTrack) return;
+      e.preventDefault();
+      const deltaX = e.clientX - this.dragStartX;
+      const trackWidth = this.scrollbarTrack.clientWidth;
+      const scrollWidth = this.scrollContainer.scrollWidth;
+      const clientWidth = this.scrollContainer.clientWidth;
+      const scrollRatio = scrollWidth / trackWidth;
+      const scrollDelta = deltaX * scrollRatio;
+      this.scrollContainer.scrollLeft = Math.max(
+        0,
+        Math.min(scrollWidth - clientWidth, this.dragStartScrollLeft + scrollDelta)
+      );
+      this.updateScrollbarPosition();
+    };
+    const handleDocumentMouseUp = () => {
+      this.isDragging = false;
+      if (this.scrollbarThumb) {
+        this.scrollbarThumb.style.cursor = "grab";
+        this.scrollbarThumb.style.background = "rgba(0, 0, 0, 0.3)";
+      }
+      document.removeEventListener("mousemove", handleDocumentMouseMove);
+      document.removeEventListener("mouseup", handleDocumentMouseUp);
+    };
+    this.scrollbarThumb.addEventListener("mousedown", handleThumbMouseDown);
+    const handleTrackClick = (e) => {
+      if (!this.scrollContainer || !this.scrollbarTrack || !this.scrollbarThumb || e.target === this.scrollbarThumb) {
+        return;
+      }
+      const rect = this.scrollbarTrack.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const trackWidth = this.scrollbarTrack.clientWidth;
+      const thumbWidth = this.scrollbarThumb.clientWidth;
+      const targetThumbLeft = Math.max(0, Math.min(trackWidth - thumbWidth, clickX - thumbWidth / 2));
+      const scrollRatio = (this.scrollContainer.scrollWidth - this.scrollContainer.clientWidth) / (trackWidth - thumbWidth);
+      this.scrollContainer.scrollLeft = targetThumbLeft * scrollRatio;
+      this.updateScrollbarPosition();
+    };
+    this.scrollbarTrack.addEventListener("click", handleTrackClick);
+  }
+  /**
+   * Sets up resize and mutation observers for dynamic updates
+   */
+  setupObservers() {
+    if (!this.scrollContainer) return;
+    this.resizeObserver = new ResizeObserver(() => {
+      this.updateScrollbar();
+    });
+    this.resizeObserver.observe(this.scrollContainer);
+    this.resizeObserver.observe(this.table);
+    this.mutationObserver = new MutationObserver(() => {
+      if (this.rafId !== null) {
+        cancelAnimationFrame(this.rafId);
+      }
+      this.rafId = requestAnimationFrame(() => {
+        this.updateScrollbar();
+        this.rafId = null;
+      });
+    });
+    this.mutationObserver.observe(this.table, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["style", "class"]
+    });
+  }
+  /**
+   * Updates scrollbar visibility and thumb size
+   */
+  updateScrollbar() {
+    if (!this.scrollContainer || !this.scrollbarTrack || !this.scrollbarThumb) return;
+    const scrollWidth = this.scrollContainer.scrollWidth;
+    const clientWidth = this.scrollContainer.clientWidth;
+    if (scrollWidth > clientWidth) {
+      this.scrollbarTrack.style.display = "block";
+      const thumbWidth = Math.max(30, clientWidth / scrollWidth * this.scrollbarTrack.clientWidth);
+      this.scrollbarThumb.style.width = `${thumbWidth}px`;
+      this.updateScrollbarPosition();
+    } else {
+      this.scrollbarTrack.style.display = "none";
+      this.scrollContainer.scrollLeft = 0;
+    }
+  }
+  /**
+   * Updates scrollbar thumb position based on scroll position
+   */
+  updateScrollbarPosition() {
+    if (!this.scrollContainer || !this.scrollbarTrack || !this.scrollbarThumb) return;
+    const scrollLeft = this.scrollContainer.scrollLeft;
+    const scrollWidth = this.scrollContainer.scrollWidth;
+    const clientWidth = this.scrollContainer.clientWidth;
+    const trackWidth = this.scrollbarTrack.clientWidth;
+    const thumbWidth = this.scrollbarThumb.clientWidth;
+    const maxScrollLeft = scrollWidth - clientWidth;
+    const maxThumbLeft = trackWidth - thumbWidth;
+    const thumbLeft = maxScrollLeft > 0 ? scrollLeft / maxScrollLeft * maxThumbLeft : 0;
+    this.scrollbarThumb.style.left = `${thumbLeft}px`;
   }
   /**
    * Captures the actual rendered column widths from the browser and updates the node
@@ -289,6 +507,9 @@ var TableView = class {
             if (finalNode) {
               this.node = finalNode;
               updateColumns(finalNode, this.colgroup, this.table, this.cellMinWidth);
+              if (this.customScrollbar) {
+                this.updateScrollbar();
+              }
             }
           }, 100);
         }
@@ -301,6 +522,9 @@ var TableView = class {
     }
     this.node = node;
     updateColumns(node, this.colgroup, this.table, this.cellMinWidth);
+    if (this.customScrollbar) {
+      this.updateScrollbar();
+    }
     return true;
   }
   ignoreMutation(mutation) {
@@ -313,6 +537,23 @@ var TableView = class {
       }
     }
     return false;
+  }
+  destroy() {
+    if (this.rafId !== null) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = void 0;
+    }
+    if (this.mutationObserver) {
+      this.mutationObserver.disconnect();
+      this.mutationObserver = void 0;
+    }
+    this.scrollContainer = void 0;
+    this.scrollbarTrack = void 0;
+    this.scrollbarThumb = void 0;
   }
 };
 
@@ -503,7 +744,8 @@ var Table = import_core5.Node.create({
       // TODO: fix
       View: TableView,
       lastColumnResizable: true,
-      allowTableNodeSelection: false
+      allowTableNodeSelection: false,
+      customScrollbar: false
     };
   },
   content: "tableRow+",
@@ -644,13 +886,31 @@ var Table = import_core5.Node.create({
   },
   addProseMirrorPlugins() {
     const isResizable = this.options.resizable && this.editor.isEditable;
+    const customScrollbar = this.options.customScrollbar;
+    const CustomView = this.options.View && customScrollbar ? class CustomTableView {
+      constructor(node, cellMinWidth, view, getPos) {
+        this.tableView = new TableView(node, cellMinWidth, view, getPos, customScrollbar);
+        this.node = this.tableView.node;
+        this.dom = this.tableView.dom;
+        this.contentDOM = this.tableView.contentDOM;
+      }
+      update(node) {
+        return this.tableView.update(node);
+      }
+      ignoreMutation(mutation) {
+        return this.tableView.ignoreMutation(mutation);
+      }
+      destroy() {
+        this.tableView.destroy();
+      }
+    } : this.options.View;
     return [
       ...isResizable ? [
         (0, import_tables2.columnResizing)({
           handleWidth: this.options.handleWidth,
           cellMinWidth: this.options.cellMinWidth,
           defaultCellMinWidth: this.options.cellMinWidth,
-          View: this.options.View,
+          View: CustomView,
           lastColumnResizable: this.options.lastColumnResizable
         })
       ] : [],

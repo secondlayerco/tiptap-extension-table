@@ -60,6 +60,13 @@ interface TableOptions {
      * @example true
      */
     allowTableNodeSelection: boolean;
+    /**
+     * Use custom scrollbar instead of native browser scrollbar.
+     * Allows full CSS control over scrollbar appearance and consistent height across browsers/OS.
+     * @default false
+     * @example true
+     */
+    customScrollbar: boolean;
 }
 declare module '@tiptap/core' {
     interface Commands<ReturnType> {
