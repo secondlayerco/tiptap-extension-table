@@ -223,6 +223,13 @@ export class TableView implements NodeView {
       // Check if table is wider than container
       if (this.table.scrollWidth <= this.scrollContainer.clientWidth) return
 
+      // Determine if this is a horizontal scroll gesture
+      // Only handle horizontal scrolling (deltaX or shift+deltaY)
+      const isHorizontalScroll = Math.abs(e.deltaX) > 0 || (e.shiftKey && Math.abs(e.deltaY) > 0)
+
+      // Only prevent default for horizontal scrolling
+      if (!isHorizontalScroll) return
+
       e.preventDefault()
 
       if (this.rafId !== null) return

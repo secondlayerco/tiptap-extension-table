@@ -286,6 +286,8 @@ var TableView = class {
     const handleWheel = (e) => {
       if (!this.scrollContainer) return;
       if (this.table.scrollWidth <= this.scrollContainer.clientWidth) return;
+      const isHorizontalScroll = Math.abs(e.deltaX) > 0 || e.shiftKey && Math.abs(e.deltaY) > 0;
+      if (!isHorizontalScroll) return;
       e.preventDefault();
       if (this.rafId !== null) return;
       this.rafId = requestAnimationFrame(() => {
