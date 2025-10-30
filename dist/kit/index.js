@@ -41,6 +41,14 @@ var TableCell = Node.create({
           const rowheight = element.getAttribute("rowheight");
           const value = rowheight ? rowheight.split(",").map((height) => parseInt(height, 10)) : null;
           return value;
+        },
+        renderHTML: (attributes) => {
+          if (!attributes.rowheight) {
+            return {};
+          }
+          return {
+            rowheight: attributes.rowheight.join(",")
+          };
         }
       }
     };
@@ -87,6 +95,14 @@ var TableHeader = Node2.create({
           const rowheight = element.getAttribute("rowheight");
           const value = rowheight ? rowheight.split(",").map((height) => parseInt(height, 10)) : null;
           return value;
+        },
+        renderHTML: (attributes) => {
+          if (!attributes.rowheight) {
+            return {};
+          }
+          return {
+            rowheight: attributes.rowheight.join(",")
+          };
         }
       }
     };
@@ -119,6 +135,14 @@ var TableRow = Node3.create({
           const rowheight = element.getAttribute("rowheight");
           const value = rowheight ? parseInt(rowheight, 10) : null;
           return value;
+        },
+        renderHTML: (attributes) => {
+          if (!attributes.rowheight) {
+            return {};
+          }
+          return {
+            rowheight: attributes.rowheight
+          };
         }
       }
     };

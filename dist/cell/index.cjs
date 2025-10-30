@@ -64,6 +64,14 @@ var TableCell = import_core.Node.create({
           const rowheight = element.getAttribute("rowheight");
           const value = rowheight ? rowheight.split(",").map((height) => parseInt(height, 10)) : null;
           return value;
+        },
+        renderHTML: (attributes) => {
+          if (!attributes.rowheight) {
+            return {};
+          }
+          return {
+            rowheight: attributes.rowheight.join(",")
+          };
         }
       }
     };

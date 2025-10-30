@@ -62,6 +62,15 @@ export const TableCell = Node.create<TableCellOptions>({
 
           return value
         },
+        renderHTML: attributes => {
+          if (!attributes.rowheight) {
+            return {}
+          }
+
+          return {
+            rowheight: attributes.rowheight.join(','),
+          }
+        },
       },
     }
   },

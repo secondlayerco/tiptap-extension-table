@@ -16,6 +16,14 @@ var TableRow = Node.create({
           const rowheight = element.getAttribute("rowheight");
           const value = rowheight ? parseInt(rowheight, 10) : null;
           return value;
+        },
+        renderHTML: (attributes) => {
+          if (!attributes.rowheight) {
+            return {};
+          }
+          return {
+            rowheight: attributes.rowheight
+          };
         }
       }
     };

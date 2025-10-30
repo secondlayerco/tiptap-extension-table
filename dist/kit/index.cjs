@@ -65,6 +65,14 @@ var TableCell = import_core.Node.create({
           const rowheight = element.getAttribute("rowheight");
           const value = rowheight ? rowheight.split(",").map((height) => parseInt(height, 10)) : null;
           return value;
+        },
+        renderHTML: (attributes) => {
+          if (!attributes.rowheight) {
+            return {};
+          }
+          return {
+            rowheight: attributes.rowheight.join(",")
+          };
         }
       }
     };
@@ -111,6 +119,14 @@ var TableHeader = import_core2.Node.create({
           const rowheight = element.getAttribute("rowheight");
           const value = rowheight ? rowheight.split(",").map((height) => parseInt(height, 10)) : null;
           return value;
+        },
+        renderHTML: (attributes) => {
+          if (!attributes.rowheight) {
+            return {};
+          }
+          return {
+            rowheight: attributes.rowheight.join(",")
+          };
         }
       }
     };
@@ -143,6 +159,14 @@ var TableRow = import_core3.Node.create({
           const rowheight = element.getAttribute("rowheight");
           const value = rowheight ? parseInt(rowheight, 10) : null;
           return value;
+        },
+        renderHTML: (attributes) => {
+          if (!attributes.rowheight) {
+            return {};
+          }
+          return {
+            rowheight: attributes.rowheight
+          };
         }
       }
     };

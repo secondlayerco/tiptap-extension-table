@@ -36,6 +36,15 @@ export const TableRow = Node.create<TableRowOptions>({
 
           return value
         },
+        renderHTML: attributes => {
+          if (!attributes.rowheight) {
+            return {}
+          }
+
+          return {
+            rowheight: attributes.rowheight,
+          }
+        },
       },
     }
   },
