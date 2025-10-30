@@ -773,14 +773,19 @@ var Table = Node.create({
       "Mod-Delete": deleteTableWhenAllCellsSelected
     };
   },
+  // @ts-ignore - TypeScript doesn't like conditional returns, but this is intentional
   addNodeView() {
     const customScrollbar = this.options.customScrollbar;
     const cellMinWidth = this.options.cellMinWidth;
     const isResizable = this.options.resizable && this.editor.isEditable;
     console.log("[Table] addNodeView called, isResizable:", isResizable, "customScrollbar:", customScrollbar);
+    if (isResizable) {
+      console.log("[Table] Returning undefined from addNodeView because resizable=true");
+      return void 0;
+    }
     return ({ node, view, getPos }) => {
       const getPosFunc = typeof getPos === "function" ? getPos : void 0;
-      console.log("[Table] Creating TableView from addNodeView with customScrollbar:", customScrollbar);
+      console.log("[Table] Creating TableView from addNodeView (non-resizable) with customScrollbar:", customScrollbar);
       return new TableView(node, cellMinWidth, view, getPosFunc, customScrollbar);
     };
   },

@@ -473,6 +473,7 @@ export const Table = Node.create<TableOptions>({
     }
   },
 
+  // @ts-ignore - TypeScript doesn't like conditional returns, but this is intentional
   addNodeView() {
     const customScrollbar = this.options.customScrollbar
     const cellMinWidth = this.options.cellMinWidth
@@ -480,12 +481,16 @@ export const Table = Node.create<TableOptions>({
 
     console.log('[Table] addNodeView called, isResizable:', isResizable, 'customScrollbar:', customScrollbar)
 
+    // IMPORTANT: When resizable=true, we must NOT return a view here
+    // The columnResizing plugin's View parameter must be the only one used
+    if (isResizable) {
+      console.log('[Table] Returning undefined from addNodeView because resizable=true')
+      return undefined
+    }
+
     return ({ node, view, getPos }: { node: ProseMirrorNode; view: EditorView; getPos: boolean | (() => number | undefined) }) => {
       const getPosFunc = typeof getPos === 'function' ? getPos : undefined
-      
-      // Note: When resizable=true, columnResizing plugin's View parameter takes precedence
-      // This will only be called for non-resizable tables
-      console.log('[Table] Creating TableView from addNodeView with customScrollbar:', customScrollbar)
+      console.log('[Table] Creating TableView from addNodeView (non-resizable) with customScrollbar:', customScrollbar)
       return new TableView(node, cellMinWidth, view, getPosFunc, customScrollbar)
     }
   },
