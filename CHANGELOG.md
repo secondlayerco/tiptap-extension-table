@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.2.0-napkin] (2025-10-30)
+
+- Add custom scrollbar support
+
 ## [0.1.0-napkin] (2025-10-29)
 
 - Initial release
