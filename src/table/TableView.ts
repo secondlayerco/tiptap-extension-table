@@ -138,20 +138,8 @@ export class TableView implements NodeView {
     // Create scroll container
     this.scrollContainer = document.createElement('div')
     this.scrollContainer.className = 'tableScrollContainer'
-    this.scrollContainer.style.cssText = `
-      overflow-x: auto;
-      overflow-y: visible;
-      position: relative;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-    `
     // Hide webkit scrollbar
     const style = document.createElement('style')
-    style.textContent = `
-      .tableScrollContainer::-webkit-scrollbar {
-        display: none;
-      }
-    `
     this.dom.appendChild(style)
 
     // Create table inside scroll container
@@ -166,30 +154,9 @@ export class TableView implements NodeView {
     // Create custom scrollbar
     this.scrollbarTrack = document.createElement('div')
     this.scrollbarTrack.className = 'customScrollbarTrack'
-    this.scrollbarTrack.style.cssText = `
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 12px;
-      background: rgba(0, 0, 0, 0.05);
-      border-radius: 6px;
-      cursor: pointer;
-      display: none;
-    `
 
     this.scrollbarThumb = document.createElement('div')
     this.scrollbarThumb.className = 'customScrollbarThumb'
-    this.scrollbarThumb.style.cssText = `
-      position: absolute;
-      top: 2px;
-      left: 0;
-      height: 8px;
-      background: rgba(0, 0, 0, 0.3);
-      border-radius: 4px;
-      cursor: grab;
-      transition: background 0.2s;
-    `
     this.scrollbarThumb.addEventListener('mouseenter', () => {
       if (!this.isDragging && this.scrollbarThumb) {
         this.scrollbarThumb.style.background = 'rgba(0, 0, 0, 0.5)'
