@@ -139,7 +139,7 @@ export class TableView implements NodeView {
     this.scrollContainer = document.createElement('div')
     this.scrollContainer.className = 'tableScrollContainer'
     this.scrollContainer.style.cssText = `
-      overflow-x: hidden;
+      overflow-x: auto;
       overflow-y: visible;
       position: relative;
       scrollbar-width: none;
@@ -223,12 +223,30 @@ export class TableView implements NodeView {
       // Check if table is wider than container
       if (this.table.scrollWidth <= this.scrollContainer.clientWidth) return
 
-      // Determine if this is a horizontal scroll gesture
-      // Only handle horizontal scrolling (deltaX or shift+deltaY)
-      const isHorizontalScroll = Math.abs(e.deltaX) > 0 || (e.shiftKey && Math.abs(e.deltaY) > 0)
+      // Determine if this is primarily a horizontal scroll gesture
+      // Only intercept if horizontal delta is significant OR shift key is pressed
+      const absX = Math.abs(e.deltaX)
+      const absY = Math.abs(e.deltaY)
+      const isHorizontalScroll = absX > absY || (e.shiftKey && absY > 0)
 
-      // Only prevent default for horizontal scrolling
+      // Only handle horizontal scrolling, let vertical scroll pass through
       if (!isHorizontalScroll) return
+
+      // Only prevent default if we're actually going to scroll
+      // This allows vertical scrolling to work smoothly
+      const scrollLeft = this.scrollContainer.scrollLeft
+      const maxScrollLeft = this.scrollContainer.scrollWidth - this.scrollContainer.clientWidth
+
+      let delta = e.deltaX
+      if (delta === 0 && e.shiftKey) {
+        delta = e.deltaY
+      }
+
+      // Check if we can actually scroll in the intended direction
+      const canScrollLeft = delta < 0 && scrollLeft > 0
+      const canScrollRight = delta > 0 && scrollLeft < maxScrollLeft
+
+      if (!canScrollLeft && !canScrollRight) return
 
       e.preventDefault()
 
@@ -240,19 +258,7 @@ export class TableView implements NodeView {
           return
         }
 
-        // Horizontal scroll from wheel
-        let delta = e.deltaX
-        if (delta === 0 && e.shiftKey) {
-          delta = e.deltaY
-        }
-
-        const newScrollLeft = Math.max(
-          0,
-          Math.min(
-            this.scrollContainer.scrollWidth - this.scrollContainer.clientWidth,
-            this.scrollContainer.scrollLeft + delta,
-          ),
-        )
+        const newScrollLeft = Math.max(0, Math.min(maxScrollLeft, scrollLeft + delta))
 
         this.scrollContainer.scrollLeft = newScrollLeft
         this.updateScrollbarPosition()
