@@ -255,13 +255,21 @@ export const Table = Node.create<TableOptions>({
   // @ts-ignore
   addOptions() {
     console.log('[Table] addOptions called')
+    
+    // Create a wrapper View that will capture options at runtime
+    const ViewWrapper = function(node: ProseMirrorNode, cellMinWidth: number, view: EditorView, getPos?: () => number | undefined) {
+      // At this point, we need to access the actual customScrollbar option
+      // But we don't have access to 'this' here, so we'll use the default TableView
+      console.log('[ViewWrapper] Called with arguments')
+      return new TableView(node, cellMinWidth, view, getPos, false)
+    } as any
+    
     const options = {
       HTMLAttributes: {},
       resizable: false,
       handleWidth: 5,
       cellMinWidth: 25,
-      // TODO: fix
-      View: TableView,
+      View: ViewWrapper,
       lastColumnResizable: true,
       allowTableNodeSelection: false,
       customScrollbar: false,
@@ -501,6 +509,7 @@ export const Table = Node.create<TableOptions>({
     const cellMinWidth = this.options.cellMinWidth
 
     console.log('[Table] addProseMirrorPlugins called, isResizable:', isResizable, 'customScrollbar:', customScrollbar)
+    console.log('[Table] this.options.View BEFORE modification:', this.options.View)
 
     // Create a View class that captures customScrollbar in its constructor
     // This is needed because columnResizing plugin requires its own View
@@ -511,9 +520,12 @@ export const Table = Node.create<TableOptions>({
       }
     }
 
-    console.log('[Table] Created TableViewWithOptions class:', TableViewWithOptions)
-    console.log('[Table] TableViewWithOptions.prototype:', TableViewWithOptions.prototype)
-    console.log('[Table] TableViewWithOptions.name:', TableViewWithOptions.name)
+    // CRITICAL: Update this.options.View so columnResizing plugin uses our custom View
+    if (isResizable) {
+      console.log('[Table] Updating this.options.View to TableViewWithOptions')
+      this.options.View = TableViewWithOptions as any
+      console.log('[Table] this.options.View AFTER modification:', this.options.View)
+    }
 
     const columnResizingPlugin = isResizable ? columnResizing({
       handleWidth: this.options.handleWidth,

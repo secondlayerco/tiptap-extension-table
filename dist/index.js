@@ -729,13 +729,16 @@ var Table = Node4.create({
   // @ts-ignore
   addOptions() {
     console.log("[Table] addOptions called");
+    const ViewWrapper = function(node, cellMinWidth, view, getPos) {
+      console.log("[ViewWrapper] Called with arguments");
+      return new TableView(node, cellMinWidth, view, getPos, false);
+    };
     const options = {
       HTMLAttributes: {},
       resizable: false,
       handleWidth: 5,
       cellMinWidth: 25,
-      // TODO: fix
-      View: TableView,
+      View: ViewWrapper,
       lastColumnResizable: true,
       allowTableNodeSelection: false,
       customScrollbar: false
@@ -900,15 +903,18 @@ var Table = Node4.create({
     const customScrollbar = this.options.customScrollbar;
     const cellMinWidth = this.options.cellMinWidth;
     console.log("[Table] addProseMirrorPlugins called, isResizable:", isResizable, "customScrollbar:", customScrollbar);
+    console.log("[Table] this.options.View BEFORE modification:", this.options.View);
     const TableViewWithOptions = class extends TableView {
       constructor(node, _cellMinWidth, view, getPos) {
         console.log("[TableViewWithOptions] Constructor called, will pass customScrollbar:", customScrollbar);
         super(node, cellMinWidth, view, getPos, customScrollbar);
       }
     };
-    console.log("[Table] Created TableViewWithOptions class:", TableViewWithOptions);
-    console.log("[Table] TableViewWithOptions.prototype:", TableViewWithOptions.prototype);
-    console.log("[Table] TableViewWithOptions.name:", TableViewWithOptions.name);
+    if (isResizable) {
+      console.log("[Table] Updating this.options.View to TableViewWithOptions");
+      this.options.View = TableViewWithOptions;
+      console.log("[Table] this.options.View AFTER modification:", this.options.View);
+    }
     const columnResizingPlugin = isResizable ? columnResizing({
       handleWidth: this.options.handleWidth,
       cellMinWidth: this.options.cellMinWidth,
