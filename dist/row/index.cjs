@@ -34,6 +34,18 @@ var TableRow = import_core.Node.create({
     };
   },
   content: "(tableCell | tableHeader)*",
+  addAttributes() {
+    return {
+      rowheight: {
+        default: null,
+        parseHTML: (element) => {
+          const rowheight = element.getAttribute("rowheight");
+          const value = rowheight ? parseInt(rowheight, 10) : null;
+          return value;
+        }
+      }
+    };
+  },
   tableRole: "row",
   parseHTML() {
     return [{ tag: "tr" }];

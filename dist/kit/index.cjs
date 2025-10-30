@@ -58,6 +58,14 @@ var TableCell = import_core.Node.create({
           }
           return value;
         }
+      },
+      rowheight: {
+        default: null,
+        parseHTML: (element) => {
+          const rowheight = element.getAttribute("rowheight");
+          const value = rowheight ? rowheight.split(",").map((height) => parseInt(height, 10)) : null;
+          return value;
+        }
       }
     };
   },
@@ -96,6 +104,14 @@ var TableHeader = import_core2.Node.create({
           const value = colwidth ? colwidth.split(",").map((width) => parseInt(width, 10)) : null;
           return value;
         }
+      },
+      rowheight: {
+        default: null,
+        parseHTML: (element) => {
+          const rowheight = element.getAttribute("rowheight");
+          const value = rowheight ? rowheight.split(",").map((height) => parseInt(height, 10)) : null;
+          return value;
+        }
       }
     };
   },
@@ -119,6 +135,18 @@ var TableRow = import_core3.Node.create({
     };
   },
   content: "(tableCell | tableHeader)*",
+  addAttributes() {
+    return {
+      rowheight: {
+        default: null,
+        parseHTML: (element) => {
+          const rowheight = element.getAttribute("rowheight");
+          const value = rowheight ? parseInt(rowheight, 10) : null;
+          return value;
+        }
+      }
+    };
+  },
   tableRole: "row",
   parseHTML() {
     return [{ tag: "tr" }];

@@ -57,6 +57,14 @@ var TableCell = import_core.Node.create({
           }
           return value;
         }
+      },
+      rowheight: {
+        default: null,
+        parseHTML: (element) => {
+          const rowheight = element.getAttribute("rowheight");
+          const value = rowheight ? rowheight.split(",").map((height) => parseInt(height, 10)) : null;
+          return value;
+        }
       }
     };
   },

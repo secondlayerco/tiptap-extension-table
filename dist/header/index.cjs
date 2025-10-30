@@ -49,6 +49,14 @@ var TableHeader = import_core.Node.create({
           const value = colwidth ? colwidth.split(",").map((width) => parseInt(width, 10)) : null;
           return value;
         }
+      },
+      rowheight: {
+        default: null,
+        parseHTML: (element) => {
+          const rowheight = element.getAttribute("rowheight");
+          const value = rowheight ? rowheight.split(",").map((height) => parseInt(height, 10)) : null;
+          return value;
+        }
       }
     };
   },

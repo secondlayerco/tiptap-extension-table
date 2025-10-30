@@ -34,6 +34,14 @@ var TableCell = Node.create({
           }
           return value;
         }
+      },
+      rowheight: {
+        default: null,
+        parseHTML: (element) => {
+          const rowheight = element.getAttribute("rowheight");
+          const value = rowheight ? rowheight.split(",").map((height) => parseInt(height, 10)) : null;
+          return value;
+        }
       }
     };
   },
@@ -72,6 +80,14 @@ var TableHeader = Node2.create({
           const value = colwidth ? colwidth.split(",").map((width) => parseInt(width, 10)) : null;
           return value;
         }
+      },
+      rowheight: {
+        default: null,
+        parseHTML: (element) => {
+          const rowheight = element.getAttribute("rowheight");
+          const value = rowheight ? rowheight.split(",").map((height) => parseInt(height, 10)) : null;
+          return value;
+        }
       }
     };
   },
@@ -95,6 +111,18 @@ var TableRow = Node3.create({
     };
   },
   content: "(tableCell | tableHeader)*",
+  addAttributes() {
+    return {
+      rowheight: {
+        default: null,
+        parseHTML: (element) => {
+          const rowheight = element.getAttribute("rowheight");
+          const value = rowheight ? parseInt(rowheight, 10) : null;
+          return value;
+        }
+      }
+    };
+  },
   tableRole: "row",
   parseHTML() {
     return [{ tag: "tr" }];
