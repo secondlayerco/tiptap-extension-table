@@ -106,8 +106,6 @@ export class TableView implements NodeView {
     getPos?: () => number | undefined,
     customScrollbar: boolean = false,
   ) {
-    console.log('[TableView] Constructor called with customScrollbar:', customScrollbar)
-    console.log('[TableView] Constructor stack trace:', new Error().stack)
     this.node = node
     this.cellMinWidth = cellMinWidth || 25
     this.view = view
@@ -117,10 +115,8 @@ export class TableView implements NodeView {
     this.dom.className = 'tableWrapper'
 
     if (this.customScrollbar) {
-      console.log('[TableView] Setting up custom scrollbar')
       this.setupCustomScrollbar()
     } else {
-      console.log('[TableView] Using native scrollbar')
       this.table = this.dom.appendChild(document.createElement('table'))
       this.colgroup = this.table.appendChild(document.createElement('colgroup'))
       updateColumns(node, this.colgroup, this.table, this.cellMinWidth)
@@ -134,7 +130,6 @@ export class TableView implements NodeView {
    * Sets up the custom scrollbar structure and event handlers
    */
   private setupCustomScrollbar() {
-    console.log('[TableView] setupCustomScrollbar called')
     // Create scroll container
     this.scrollContainer = document.createElement('div')
     this.scrollContainer.className = 'tableScrollContainer'

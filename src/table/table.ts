@@ -243,8 +243,6 @@ declare module '@tiptap/core' {
   }
 }
 
-console.log('[Table Extension] Module loaded')
-
 /**
  * This extension allows you to create tables.
  * @see https://www.tiptap.dev/api/nodes/table
@@ -254,17 +252,14 @@ export const Table = Node.create<TableOptions>({
 
   // @ts-ignore
   addOptions() {
-    console.log('[Table] addOptions called')
-    
     // Create a wrapper View that will capture options at runtime
     const ViewWrapper = function(node: ProseMirrorNode, cellMinWidth: number, view: EditorView, getPos?: () => number | undefined) {
       // At this point, we need to access the actual customScrollbar option
       // But we don't have access to 'this' here, so we'll use the default TableView
-      console.log('[ViewWrapper] Called with arguments')
       return new TableView(node, cellMinWidth, view, getPos, false)
     } as any
-    
-    const options = {
+
+    return {
       HTMLAttributes: {},
       resizable: false,
       handleWidth: 5,
@@ -274,8 +269,6 @@ export const Table = Node.create<TableOptions>({
       allowTableNodeSelection: false,
       customScrollbar: false,
     }
-    console.log('[Table] Default options:', options)
-    return options
   },
 
   content: 'tableRow+',
@@ -487,18 +480,14 @@ export const Table = Node.create<TableOptions>({
     const cellMinWidth = this.options.cellMinWidth
     const isResizable = this.options.resizable && this.editor.isEditable
 
-    console.log('[Table] addNodeView called, isResizable:', isResizable, 'customScrollbar:', customScrollbar)
-
     // IMPORTANT: When resizable=true, we must NOT return a view here
     // The columnResizing plugin's View parameter must be the only one used
     if (isResizable) {
-      console.log('[Table] Returning undefined from addNodeView because resizable=true')
       return undefined
     }
 
     return ({ node, view, getPos }: { node: ProseMirrorNode; view: EditorView; getPos: boolean | (() => number | undefined) }) => {
       const getPosFunc = typeof getPos === 'function' ? getPos : undefined
-      console.log('[Table] Creating TableView from addNodeView (non-resizable) with customScrollbar:', customScrollbar)
       return new TableView(node, cellMinWidth, view, getPosFunc, customScrollbar)
     }
   },
@@ -508,9 +497,6 @@ export const Table = Node.create<TableOptions>({
     const customScrollbar = this.options.customScrollbar
     const cellMinWidth = this.options.cellMinWidth
 
-    console.log('[Table] addProseMirrorPlugins called, isResizable:', isResizable, 'customScrollbar:', customScrollbar)
-    console.log('[Table] this.options.View BEFORE modification:', this.options.View)
-
     // Create a View class that captures customScrollbar in its constructor
     // This is needed because columnResizing plugin requires its own View
     // IMPORTANT: prosemirror-tables' columnResizing calls the View constructor with only 3 parameters:
@@ -518,8 +504,6 @@ export const Table = Node.create<TableOptions>({
     // So we need to handle both cases: when called with 3 params (from columnResizing) and 4 params (from addNodeView)
     const TableViewWithOptions = class extends TableView {
       constructor(node: ProseMirrorNode, _cellMinWidth: number, view: EditorView, getPos?: () => number | undefined) {
-        console.log('[TableViewWithOptions] Constructor called with', arguments.length, 'arguments')
-        console.log('[TableViewWithOptions] Will pass customScrollbar:', customScrollbar)
         // Always pass customScrollbar from the closure, regardless of how many params we receive
         super(node, cellMinWidth, view, getPos, customScrollbar)
       }
@@ -527,9 +511,7 @@ export const Table = Node.create<TableOptions>({
 
     // CRITICAL: Update this.options.View so columnResizing plugin uses our custom View
     if (isResizable) {
-      console.log('[Table] Updating this.options.View to TableViewWithOptions')
       this.options.View = TableViewWithOptions as any
-      console.log('[Table] this.options.View AFTER modification:', this.options.View)
     }
 
     const columnResizingPlugin = isResizable ? columnResizing({
@@ -540,20 +522,12 @@ export const Table = Node.create<TableOptions>({
       lastColumnResizable: this.options.lastColumnResizable,
     }) : null
 
-    if (columnResizingPlugin) {
-      console.log('[Table] columnResizing plugin created:', columnResizingPlugin)
-      console.log('[Table] columnResizing plugin spec:', columnResizingPlugin.spec)
-    }
-
-    const plugins = [
+    return [
       ...(isResizable && columnResizingPlugin ? [columnResizingPlugin] : []),
       tableEditing({
         allowTableNodeSelection: this.options.allowTableNodeSelection,
       }),
     ]
-    
-    console.log('[Table] Returning plugins:', plugins.length, 'plugins')
-    return plugins
   },
 
   extendNodeSchema(extension) {

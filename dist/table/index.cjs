@@ -91,8 +91,6 @@ var TableView = class {
     this.dragStartX = 0;
     this.dragStartScrollLeft = 0;
     this.rafId = null;
-    console.log("[TableView] Constructor called with customScrollbar:", customScrollbar);
-    console.log("[TableView] Constructor stack trace:", new Error().stack);
     this.node = node;
     this.cellMinWidth = cellMinWidth || 25;
     this.view = view;
@@ -101,10 +99,8 @@ var TableView = class {
     this.dom = document.createElement("div");
     this.dom.className = "tableWrapper";
     if (this.customScrollbar) {
-      console.log("[TableView] Setting up custom scrollbar");
       this.setupCustomScrollbar();
     } else {
-      console.log("[TableView] Using native scrollbar");
       this.table = this.dom.appendChild(document.createElement("table"));
       this.colgroup = this.table.appendChild(document.createElement("colgroup"));
       updateColumns(node, this.colgroup, this.table, this.cellMinWidth);
@@ -116,22 +112,9 @@ var TableView = class {
    * Sets up the custom scrollbar structure and event handlers
    */
   setupCustomScrollbar() {
-    console.log("[TableView] setupCustomScrollbar called");
     this.scrollContainer = document.createElement("div");
     this.scrollContainer.className = "tableScrollContainer";
-    this.scrollContainer.style.cssText = `
-      overflow-x: auto;
-      overflow-y: visible;
-      position: relative;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-    `;
     const style = document.createElement("style");
-    style.textContent = `
-      .tableScrollContainer::-webkit-scrollbar {
-        display: none;
-      }
-    `;
     this.dom.appendChild(style);
     this.table = this.scrollContainer.appendChild(document.createElement("table"));
     this.colgroup = this.table.appendChild(document.createElement("colgroup"));
@@ -140,29 +123,8 @@ var TableView = class {
     this.dom.appendChild(this.scrollContainer);
     this.scrollbarTrack = document.createElement("div");
     this.scrollbarTrack.className = "customScrollbarTrack";
-    this.scrollbarTrack.style.cssText = `
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 12px;
-      background: rgba(0, 0, 0, 0.05);
-      border-radius: 6px;
-      cursor: pointer;
-      display: none;
-    `;
     this.scrollbarThumb = document.createElement("div");
     this.scrollbarThumb.className = "customScrollbarThumb";
-    this.scrollbarThumb.style.cssText = `
-      position: absolute;
-      top: 2px;
-      left: 0;
-      height: 8px;
-      background: rgba(0, 0, 0, 0.3);
-      border-radius: 4px;
-      cursor: grab;
-      transition: background 0.2s;
-    `;
     this.scrollbarThumb.addEventListener("mouseenter", () => {
       if (!this.isDragging && this.scrollbarThumb) {
         this.scrollbarThumb.style.background = "rgba(0, 0, 0, 0.5)";
@@ -628,17 +590,14 @@ function renderTableToMarkdown(node, h, options = {}) {
 var markdown_default = renderTableToMarkdown;
 
 // src/table/table.ts
-console.log("[Table Extension] Module loaded");
 var Table = import_core2.Node.create({
   name: "table",
   // @ts-ignore
   addOptions() {
-    console.log("[Table] addOptions called");
     const ViewWrapper = function(node, cellMinWidth, view, getPos) {
-      console.log("[ViewWrapper] Called with arguments");
       return new TableView(node, cellMinWidth, view, getPos, false);
     };
-    const options = {
+    return {
       HTMLAttributes: {},
       resizable: false,
       handleWidth: 5,
@@ -648,8 +607,6 @@ var Table = import_core2.Node.create({
       allowTableNodeSelection: false,
       customScrollbar: false
     };
-    console.log("[Table] Default options:", options);
-    return options;
   },
   content: "tableRow+",
   tableRole: "table",
@@ -792,14 +749,11 @@ var Table = import_core2.Node.create({
     const customScrollbar = this.options.customScrollbar;
     const cellMinWidth = this.options.cellMinWidth;
     const isResizable = this.options.resizable && this.editor.isEditable;
-    console.log("[Table] addNodeView called, isResizable:", isResizable, "customScrollbar:", customScrollbar);
     if (isResizable) {
-      console.log("[Table] Returning undefined from addNodeView because resizable=true");
       return void 0;
     }
     return ({ node, view, getPos }) => {
       const getPosFunc = typeof getPos === "function" ? getPos : void 0;
-      console.log("[Table] Creating TableView from addNodeView (non-resizable) with customScrollbar:", customScrollbar);
       return new TableView(node, cellMinWidth, view, getPosFunc, customScrollbar);
     };
   },
@@ -807,19 +761,13 @@ var Table = import_core2.Node.create({
     const isResizable = this.options.resizable && this.editor.isEditable;
     const customScrollbar = this.options.customScrollbar;
     const cellMinWidth = this.options.cellMinWidth;
-    console.log("[Table] addProseMirrorPlugins called, isResizable:", isResizable, "customScrollbar:", customScrollbar);
-    console.log("[Table] this.options.View BEFORE modification:", this.options.View);
     const TableViewWithOptions = class extends TableView {
       constructor(node, _cellMinWidth, view, getPos) {
-        console.log("[TableViewWithOptions] Constructor called with", arguments.length, "arguments");
-        console.log("[TableViewWithOptions] Will pass customScrollbar:", customScrollbar);
         super(node, cellMinWidth, view, getPos, customScrollbar);
       }
     };
     if (isResizable) {
-      console.log("[Table] Updating this.options.View to TableViewWithOptions");
       this.options.View = TableViewWithOptions;
-      console.log("[Table] this.options.View AFTER modification:", this.options.View);
     }
     const columnResizingPlugin = isResizable ? (0, import_tables2.columnResizing)({
       handleWidth: this.options.handleWidth,
@@ -828,18 +776,12 @@ var Table = import_core2.Node.create({
       View: TableViewWithOptions,
       lastColumnResizable: this.options.lastColumnResizable
     }) : null;
-    if (columnResizingPlugin) {
-      console.log("[Table] columnResizing plugin created:", columnResizingPlugin);
-      console.log("[Table] columnResizing plugin spec:", columnResizingPlugin.spec);
-    }
-    const plugins = [
+    return [
       ...isResizable && columnResizingPlugin ? [columnResizingPlugin] : [],
       (0, import_tables2.tableEditing)({
         allowTableNodeSelection: this.options.allowTableNodeSelection
       })
     ];
-    console.log("[Table] Returning plugins:", plugins.length, "plugins");
-    return plugins;
   },
   extendNodeSchema(extension) {
     const context = {
