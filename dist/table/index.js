@@ -85,6 +85,7 @@ var TableView = class {
     this.dragStartScrollLeft = 0;
     this.rafId = null;
     console.log("[TableView] Constructor called with customScrollbar:", customScrollbar);
+    console.log("[TableView] Constructor stack trace:", new Error().stack);
     this.node = node;
     this.cellMinWidth = cellMinWidth || 25;
     this.view = view;
