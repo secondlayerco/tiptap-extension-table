@@ -29,7 +29,7 @@ import {
   toggleHeader,
   toggleHeaderCell,
 } from '@tiptap/pm/tables'
-import type { EditorView, NodeView } from '@tiptap/pm/view'
+import type { EditorView, NodeView, ViewMutationRecord } from '@tiptap/pm/view'
 
 import { TableView } from './TableView.js'
 import { createColGroup } from './utilities/createColGroup.js'
@@ -90,6 +90,14 @@ export interface TableOptions {
    * @example true
    */
   allowTableNodeSelection: boolean
+
+  /**
+   * Use custom scrollbar instead of native browser scrollbar.
+   * Allows full CSS control over scrollbar appearance and consistent height across browsers/OS.
+   * @default false
+   * @example true
+   */
+  customScrollbar: boolean
 }
 
 declare module '@tiptap/core' {
@@ -244,15 +252,22 @@ export const Table = Node.create<TableOptions>({
 
   // @ts-ignore
   addOptions() {
+    // Create a wrapper View that will capture options at runtime
+    const ViewWrapper = function(node: ProseMirrorNode, cellMinWidth: number, view: EditorView, getPos?: () => number | undefined) {
+      // At this point, we need to access the actual customScrollbar option
+      // But we don't have access to 'this' here, so we'll use the default TableView
+      return new TableView(node, cellMinWidth, view, getPos, false)
+    } as any
+
     return {
       HTMLAttributes: {},
       resizable: false,
       handleWidth: 5,
       cellMinWidth: 25,
-      // TODO: fix
-      View: TableView,
+      View: ViewWrapper,
       lastColumnResizable: true,
       allowTableNodeSelection: false,
+      customScrollbar: false,
     }
   },
 
@@ -459,21 +474,56 @@ export const Table = Node.create<TableOptions>({
     }
   },
 
-  addProseMirrorPlugins() {
+  // @ts-ignore - TypeScript doesn't like conditional returns, but this is intentional
+  addNodeView() {
+    const customScrollbar = this.options.customScrollbar
+    const cellMinWidth = this.options.cellMinWidth
     const isResizable = this.options.resizable && this.editor.isEditable
 
+    // IMPORTANT: When resizable=true, we must NOT return a view here
+    // The columnResizing plugin's View parameter must be the only one used
+    if (isResizable) {
+      return undefined
+    }
+
+    return ({ node, view, getPos }: { node: ProseMirrorNode; view: EditorView; getPos: boolean | (() => number | undefined) }) => {
+      const getPosFunc = typeof getPos === 'function' ? getPos : undefined
+      return new TableView(node, cellMinWidth, view, getPosFunc, customScrollbar)
+    }
+  },
+
+  addProseMirrorPlugins() {
+    const isResizable = this.options.resizable && this.editor.isEditable
+    const customScrollbar = this.options.customScrollbar
+    const cellMinWidth = this.options.cellMinWidth
+
+    // Create a View class that captures customScrollbar in its constructor
+    // This is needed because columnResizing plugin requires its own View
+    // IMPORTANT: prosemirror-tables' columnResizing calls the View constructor with only 3 parameters:
+    // new View(node, defaultCellMinWidth, view) - it doesn't pass getPos!
+    // So we need to handle both cases: when called with 3 params (from columnResizing) and 4 params (from addNodeView)
+    const TableViewWithOptions = class extends TableView {
+      constructor(node: ProseMirrorNode, _cellMinWidth: number, view: EditorView, getPos?: () => number | undefined) {
+        // Always pass customScrollbar from the closure, regardless of how many params we receive
+        super(node, cellMinWidth, view, getPos, customScrollbar)
+      }
+    }
+
+    // CRITICAL: Update this.options.View so columnResizing plugin uses our custom View
+    if (isResizable) {
+      this.options.View = TableViewWithOptions as any
+    }
+
+    const columnResizingPlugin = isResizable ? columnResizing({
+      handleWidth: this.options.handleWidth,
+      cellMinWidth: this.options.cellMinWidth,
+      defaultCellMinWidth: this.options.cellMinWidth,
+      View: TableViewWithOptions,
+      lastColumnResizable: this.options.lastColumnResizable,
+    }) : null
+
     return [
-      ...(isResizable
-        ? [
-            columnResizing({
-              handleWidth: this.options.handleWidth,
-              cellMinWidth: this.options.cellMinWidth,
-              defaultCellMinWidth: this.options.cellMinWidth,
-              View: this.options.View,
-              lastColumnResizable: this.options.lastColumnResizable,
-            }),
-          ]
-        : []),
+      ...(isResizable && columnResizingPlugin ? [columnResizingPlugin] : []),
       tableEditing({
         allowTableNodeSelection: this.options.allowTableNodeSelection,
       }),

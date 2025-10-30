@@ -102,6 +102,13 @@ interface TableOptions {
      * @example true
      */
     allowTableNodeSelection: boolean;
+    /**
+     * Use custom scrollbar instead of native browser scrollbar.
+     * Allows full CSS control over scrollbar appearance and consistent height across browsers/OS.
+     * @default false
+     * @example true
+     */
+    customScrollbar: boolean;
 }
 declare module '@tiptap/core' {
     interface Commands<ReturnType> {
@@ -304,7 +311,37 @@ declare class TableView implements NodeView {
     contentDOM: HTMLTableSectionElement;
     view?: EditorView;
     getPos?: () => number | undefined;
-    constructor(node: Node$1, cellMinWidth?: number, view?: EditorView, getPos?: () => number | undefined);
+    customScrollbar: boolean;
+    scrollContainer?: HTMLDivElement;
+    scrollbarTrack?: HTMLDivElement;
+    scrollbarThumb?: HTMLDivElement;
+    private isDragging;
+    private dragStartX;
+    private dragStartScrollLeft;
+    private rafId;
+    private resizeObserver?;
+    private mutationObserver?;
+    constructor(node: Node$1, cellMinWidth?: number, view?: EditorView, getPos?: () => number | undefined, customScrollbar?: boolean);
+    /**
+     * Sets up the custom scrollbar structure and event handlers
+     */
+    private setupCustomScrollbar;
+    /**
+     * Sets up all event handlers for custom scrollbar
+     */
+    private setupScrollbarEvents;
+    /**
+     * Sets up resize and mutation observers for dynamic updates
+     */
+    private setupObservers;
+    /**
+     * Updates scrollbar visibility and thumb size
+     */
+    private updateScrollbar;
+    /**
+     * Updates scrollbar thumb position based on scroll position
+     */
+    private updateScrollbarPosition;
     /**
      * Captures the actual rendered column widths from the browser and updates the node
      * attributes. Uses a temporary removal of width constraints to let the browser
@@ -313,6 +350,7 @@ declare class TableView implements NodeView {
     private captureColumnWidths;
     update(node: Node$1): boolean;
     ignoreMutation(mutation: ViewMutationRecord): boolean;
+    destroy(): void;
 }
 
 export { type ColGroup, DEFAULT_CELL_LINE_SEPARATOR, Table, TableCell, type TableCellOptions, TableHeader, type TableHeaderOptions, TableKit, type TableKitOptions, type TableOptions, TableRow, type TableRowOptions, TableView, createColGroup, createTable, renderTableToMarkdown, updateColumns };
