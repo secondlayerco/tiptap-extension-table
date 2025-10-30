@@ -513,9 +513,14 @@ export const Table = Node.create<TableOptions>({
 
     // Create a View class that captures customScrollbar in its constructor
     // This is needed because columnResizing plugin requires its own View
+    // IMPORTANT: prosemirror-tables' columnResizing calls the View constructor with only 3 parameters:
+    // new View(node, defaultCellMinWidth, view) - it doesn't pass getPos!
+    // So we need to handle both cases: when called with 3 params (from columnResizing) and 4 params (from addNodeView)
     const TableViewWithOptions = class extends TableView {
       constructor(node: ProseMirrorNode, _cellMinWidth: number, view: EditorView, getPos?: () => number | undefined) {
-        console.log('[TableViewWithOptions] Constructor called, will pass customScrollbar:', customScrollbar)
+        console.log('[TableViewWithOptions] Constructor called with', arguments.length, 'arguments')
+        console.log('[TableViewWithOptions] Will pass customScrollbar:', customScrollbar)
+        // Always pass customScrollbar from the closure, regardless of how many params we receive
         super(node, cellMinWidth, view, getPos, customScrollbar)
       }
     }

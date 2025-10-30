@@ -801,7 +801,8 @@ var Table = Node.create({
     console.log("[Table] this.options.View BEFORE modification:", this.options.View);
     const TableViewWithOptions = class extends TableView {
       constructor(node, _cellMinWidth, view, getPos) {
-        console.log("[TableViewWithOptions] Constructor called, will pass customScrollbar:", customScrollbar);
+        console.log("[TableViewWithOptions] Constructor called with", arguments.length, "arguments");
+        console.log("[TableViewWithOptions] Will pass customScrollbar:", customScrollbar);
         super(node, cellMinWidth, view, getPos, customScrollbar);
       }
     };
