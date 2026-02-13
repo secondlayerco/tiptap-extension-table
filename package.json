@@ -1,17 +1,7 @@
 {
   "name": "tiptap-extension-table",
   "description": "table extension for tiptap",
-  "version": "0.2.0-napkin",
-  "homepage": "https://tiptap.dev",
-  "keywords": [
-    "tiptap",
-    "tiptap extension"
-  ],
-  "license": "MIT",
-  "funding": {
-    "type": "github",
-    "url": "https://github.com/sponsors/ueberdosis"
-  },
+  "version": "0.2.1-napkin",
   "type": "module",
   "exports": {
     ".": {
@@ -71,19 +61,18 @@
     "dist"
   ],
   "devDependencies": {
-    "@tiptap/core": "3.7.0",
-    "@tiptap/pm": "3.7.0",
+    "@tiptap/core": "3.19.0",
+    "@tiptap/pm": "3.19.0",
     "tsup": "^8.5.0",
     "typescript": "^5.9.3"
   },
   "peerDependencies": {
-    "@tiptap/core": "3.7.0",
-    "@tiptap/pm": "3.7.0"
+    "@tiptap/core": "3.19.0",
+    "@tiptap/pm": "3.19.0"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ueberdosis/tiptap",
-    "directory": "packages/extension-table"
+    "url": "https://github.com/secondlayer/tiptap-extension-table"
   },
   "scripts": {
     "build": "tsup",
