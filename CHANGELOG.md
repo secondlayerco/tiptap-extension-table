@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.2.1-napkin] (2026-02-13)
+
+- Update tiptap to 3.19.0
+
 ## [0.2.0-napkin] (2025-10-30)
 
 - Add custom scrollbar support
