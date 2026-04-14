@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.2.2-napkin] (2026-04-14)
+
+- Update tiptap to 3.22.3
+
 ## [0.2.1-napkin] (2026-02-13)
 
 - Update tiptap to 3.19.0
