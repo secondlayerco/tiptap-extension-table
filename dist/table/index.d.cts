@@ -1,5 +1,5 @@
-import { ParentConfig, Node as Node$1, JSONContent, MarkdownRendererHelpers } from '@tiptap/core';
-import { Node, DOMOutputSpec, Schema, Fragment } from '@tiptap/pm/model';
+import { ParentConfig, Node, JSONContent, MarkdownRendererHelpers } from '@tiptap/core';
+import { Node as Node$1, DOMOutputSpec, Schema, Fragment } from '@tiptap/pm/model';
 import { EditorView, NodeView } from '@tiptap/pm/view';
 
 declare module '@tiptap/core' {
@@ -47,7 +47,7 @@ interface TableOptions {
      * The node view to render the table.
      * @default TableView
      */
-    View: (new (node: Node, cellMinWidth: number, view: EditorView, getPos?: () => number | undefined) => NodeView) | null;
+    View: (new (node: Node$1, cellMinWidth: number, view: EditorView, getPos?: () => number | undefined) => NodeView) | null;
     /**
      * Enables the resizing of the last column.
      * @default true
@@ -203,7 +203,7 @@ declare module '@tiptap/core' {
  * This extension allows you to create tables.
  * @see https://www.tiptap.dev/api/nodes/table
  */
-declare const Table: Node$1<TableOptions, any>;
+declare const Table: Node<TableOptions, any>;
 
 type ColGroup = {
     colgroup: DOMOutputSpec;
@@ -219,10 +219,10 @@ type ColGroup = {
  * @param overrideValue - (Optional) The width value to use for the overridden column.
  * @returns An object containing the colgroup element, the total width of the table, and the minimum width of the table.
  */
-declare function createColGroup(node: Node, cellMinWidth: number): ColGroup;
-declare function createColGroup(node: Node, cellMinWidth: number, overrideCol: number, overrideValue: number): ColGroup;
+declare function createColGroup(node: Node$1, cellMinWidth: number): ColGroup;
+declare function createColGroup(node: Node$1, cellMinWidth: number, overrideCol: number, overrideValue: number): ColGroup;
 
-declare function createTable(schema: Schema, rowsCount: number, colsCount: number, withHeaderRow: boolean, cellContent?: Fragment | Node | Array<Node>): Node;
+declare function createTable(schema: Schema, rowsCount: number, colsCount: number, withHeaderRow: boolean, cellContent?: Fragment | Node$1 | Array<Node$1>): Node$1;
 
 declare const DEFAULT_CELL_LINE_SEPARATOR = "\u001F";
 declare function renderTableToMarkdown(node: JSONContent, h: MarkdownRendererHelpers, options?: {
