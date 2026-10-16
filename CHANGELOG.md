@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.2.3-napkin] (2026-10-15)
+
+- Accept compatible Tiptap 3 releases from 3.22.3 onward.
+
 ## [0.2.2-napkin] (2026-04-14)
 
 - Update tiptap to 3.22.3

@@ -1,7 +1,7 @@
 {
   "name": "tiptap-extension-table",
   "description": "table extension for tiptap",
-  "version": "0.2.2-napkin",
+  "version": "0.2.3-napkin",
   "type": "module",
   "exports": {
     ".": {
@@ -67,8 +67,8 @@
     "typescript": "^5.9.3"
   },
   "peerDependencies": {
-    "@tiptap/core": "3.22.3",
-    "@tiptap/pm": "3.22.3"
+    "@tiptap/core": "^3.22.3",
+    "@tiptap/pm": "^3.22.3"
   },
   "repository": {
     "type": "git",
